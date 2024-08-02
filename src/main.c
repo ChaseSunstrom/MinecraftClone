@@ -1,10 +1,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <c-util/c-util.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+void framebuffer_size_callback(GLFWwindow *window, i32 width, i32 height) {
   glViewport(0, 0, width, height);
 }
 

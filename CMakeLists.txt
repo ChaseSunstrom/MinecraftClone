@@ -5,9 +5,18 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Set the source files
-set(SOURCES src/main.c
+set(SOURCES
+        src/main.c
         # Add other source files here
 )
+
+# Add your custom library source files
+file(GLOB LIB_SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/c-util/*.c
+)
+
+# Combine all sources
+set(ALL_SOURCES ${SOURCES} ${LIB_SOURCES})
 
 include(FetchContent)
 
@@ -48,7 +57,7 @@ endif()
 get_target_property(GLAD_INCLUDE_DIRS glad INCLUDE_DIRECTORIES)
 
 # Create the executable
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} ${ALL_SOURCES})
 
 # Include directories
 target_include_directories(
@@ -57,6 +66,7 @@ target_include_directories(
         ${GLAD_INCLUDE_DIRS}
         ${glfw_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/c-util
 )
 
 # Link libraries
