@@ -6,8 +6,8 @@ i32 main() {
 	MC::Application app;
 
 	app.CreateWindow("Minecraft Clone", 1000, 1000)
-		.AddShutdownFunction([](MC::Application& app) {
-		std::cout << "Application initialized!";
+		.AddStartupFunction([](MC::Application& app) {
+			std::cout << "Application initialized!";
 		})
 		.Start();
 
