@@ -28,6 +28,7 @@ namespace MC {
 		void           DestroyWindow();
 		void           Update();
 		bool           Running();
+		void Shutdown();
 		void           SetTitle(const std::string&);
 		void           SetSize(i32 width, i32 height);
 		WindowData& GetWindowData() const;
@@ -38,6 +39,7 @@ namespace MC {
 
 	private:
 		GLFWwindow* m_window;
+		bool m_running;
 		std::unique_ptr<WindowData> m_window_data;
 	};
 }

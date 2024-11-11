@@ -32,6 +32,11 @@ namespace MC {
 		m_window->Update();
 	}
 
+	void Application::Shutdown() {
+		// Shutdown window for now
+		m_window->Shutdown();
+	}
+
 	Application& Application::AddStartupFunction(const ApplicationFunction& fn, const FunctionSettings settings) {
 		m_startup_functions.push_back({ fn, settings });
 		return *this;

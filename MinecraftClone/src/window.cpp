@@ -5,7 +5,7 @@
 
 namespace MC {
 	Window::Window(const std::string& title, i32 width, i32 height, EventHandler& event_handler)
-		: m_window_data(std::make_unique<WindowData>(title, width, height, event_handler)) {
+		: m_window_data(std::make_unique<WindowData>(title, width, height, event_handler)), m_running(true) {
 		CreateWindow(width, height, title);
 		
 		// Subscribes to make sure window gets resized properly
@@ -99,7 +99,16 @@ namespace MC {
 		glfwPollEvents();
 	}
 
-	bool Window::Running() { return !glfwWindowShouldClose(m_window); }
+	void Window::Shutdown() {
+		m_running = false;
+	}
+
+	bool Window::Running() { 
+		if (!m_running)
+			return m_running;
+
+		m_running = !glfwWindowShouldClose(m_window);
+	}
 
 	void Window::SetTitle(const std::string& title) {
 		m_window_data->title = title;

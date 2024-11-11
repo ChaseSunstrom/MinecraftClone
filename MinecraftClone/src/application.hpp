@@ -17,6 +17,7 @@ namespace MC {
 		~Application();
 
 		void         Start();
+		void         Shutdown();
 		const bool   Running() const;
 		Application& AddStartupFunction(const ApplicationFunction& fn, const FunctionSettings settings = {});
 		Application& AddUpdateFunction(const ApplicationFunction& fn, const FunctionSettings settings = {});
