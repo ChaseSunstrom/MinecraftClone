@@ -96,7 +96,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\thread_pool.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\defines.hpp" />
+    <ClInclude Include="src\event.hpp" />
+    <ClInclude Include="src\log.hpp" />
+    <ClInclude Include="src\thread_pool.hpp" />
+    <ClInclude Include="src\types.hpp" />
+    <ClInclude Include="src\window.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
