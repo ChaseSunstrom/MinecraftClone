@@ -51,7 +51,7 @@ void RotateVoxel(MC::Application& app, u32 voxel_id, const glm::vec3& rotation_i
 void MoveCameraOnKeyPress(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event) {
     MC::Camera& camera = app.GetScene().GetCamera();
 
-    f32 delta_time = 0.1f;
+    f32 delta_time = 0.3f;
 
     // Determine the direction based on the key pressed
     switch (event->key) {
@@ -67,6 +67,13 @@ void MoveCameraOnKeyPress(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent
     case GLFW_KEY_D:
         camera.ProcessKeyboard(MC::CameraMovement::RIGHT, delta_time);
         break;
+    case GLFW_KEY_SPACE:
+        camera.ProcessKeyboard(MC::CameraMovement::UP, delta_time);
+        break;
+    case GLFW_KEY_LEFT_SHIFT:
+        camera.ProcessKeyboard(MC::CameraMovement::DOWN, delta_time);
+        break;
+
     }
 }
 
