@@ -99,7 +99,7 @@ void RotateCameraOnMouseMove(MC::Application& app, MC::EventPtr<MC::MouseMovedEv
     lastx = xpos;
     lasty = ypos;
 
-    f32 mouse_sensitivity = camera.GetMouseSensitivity(); // Assume getter exists
+    f32 mouse_sensitivity = camera.GetMouseSensitivity();
     xoffset *= mouse_sensitivity;
     yoffset *= mouse_sensitivity;
 
