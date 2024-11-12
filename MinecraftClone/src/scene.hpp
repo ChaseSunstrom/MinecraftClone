@@ -13,7 +13,7 @@ namespace MC {
     public:
         static Scene& GetScene();
         void InsertVoxel(const Voxel& voxel);
-        void RemoveVoxel(u32 voxel_id); // Modify to remove by ID
+        void RemoveVoxel(u32 voxel_id);
         void UpdateVoxel(const Voxel& updated_voxel);
         void InitializeScene();
 
