@@ -91,8 +91,8 @@ namespace MC {
 
 		glewInit();
 
-		glEnable(GL_DEPTH_TEST);
-
+		glEnable(GL_DEPTH_TEST); 
+		glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); 
 	}
 
 	void Window::DestroyWindow() {

@@ -67,7 +67,7 @@ namespace MC {
 
         // Determine the total number of instances to render
         size_t total_instances = 0;
-        for (const auto& [color, transforms] : scene.GetVoxelTransforms()) {
+        for (const auto& [color, transforms] : scene.GetVoxelMatrices()) {
             total_instances += transforms.size();
         }
 
@@ -78,7 +78,7 @@ namespace MC {
         }
 
         // Render each voxel group by color
-        for (const auto& [color, transforms] : scene.GetVoxelTransforms()) {
+        for (const auto& [color, transforms] : scene.GetVoxelMatrices()) {
             if (transforms.empty()) continue;
 
             // Update instance buffer data for transformations

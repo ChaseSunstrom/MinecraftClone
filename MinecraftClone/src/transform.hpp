@@ -12,21 +12,26 @@ namespace MC {
 			UpdateTransform();
 		}
 
-		void Move(glm::vec3 pos)
+		void Move(const glm::vec3& pos)
 		{
 			m_pos += pos;
 			UpdateTransform();
 		}
 
-		void Rotate(glm::vec3 rot)
+		void Rotate(const glm::vec3& rot)
 		{
 			m_rot += rot;
 			UpdateTransform();
 		}
 
-		void Scale(glm::vec3 scale)
+		void Scale(const glm::vec3& scale)
 		{
 			m_scale *= scale;
+			UpdateTransform();
+		}
+
+		void SetScale(const glm::vec3& scale) {
+			m_scale = scale;
 			UpdateTransform();
 		}
 
@@ -55,18 +60,21 @@ namespace MC {
 		}
 
 	private:
-		void UpdateTransform()
-		{
-			m_transform = glm::identity<glm::mat4>();
+		void UpdateTransform() {
+			m_transform = glm::mat4(1.0f);
 
+			// Translation
 			m_transform = glm::translate(m_transform, m_pos);
 
-			m_transform = glm::rotate(m_transform, m_rot.x, glm::vec3(1, 0, 0));
-			m_transform = glm::rotate(m_transform, m_rot.y, glm::vec3(0, 1, 0));
-			m_transform = glm::rotate(m_transform, m_rot.z, glm::vec3(0, 0, 1));
+			// Rotation
+			m_transform = glm::rotate(m_transform, glm::radians(m_rot.x), glm::vec3(1, 0, 0));
+			m_transform = glm::rotate(m_transform, glm::radians(m_rot.y), glm::vec3(0, 1, 0));
+			m_transform = glm::rotate(m_transform, glm::radians(m_rot.z), glm::vec3(0, 0, 1));
 
+			// Scaling
 			m_transform = glm::scale(m_transform, m_scale);
 		}
+
 
 		glm::vec3 m_pos;
 		glm::vec3 m_rot;

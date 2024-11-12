@@ -141,6 +141,9 @@ namespace MC {
 		// Initialize scene after OpenGL has been initialized
 		m_scene->InitializeScene();
 		m_renderer = std::make_unique<Renderer>();
+
+		m_event_handler->PublishEvent<WindowResizedEvent>(std::make_shared<WindowResizedEvent>(width, height));
+
 		return *this;
 	}
 
