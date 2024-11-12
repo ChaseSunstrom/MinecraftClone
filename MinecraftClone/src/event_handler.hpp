@@ -84,7 +84,7 @@ namespace MC {
 			m_multi_event_handlers[typeid(_Ty)].push_back({ handler, settings });
 		}
 
-		template<IsEvent... EventTypes> static MultiEventPtr<EventTypes...> CreateMultiEvent(const EventPtr<IEvent>& base_event) { return MakeShared<MultiEvent<EventTypes...>>(base_event); }
+		template<IsEvent... EventTypes> static MultiEventPtr<EventTypes...> CreateMultiEvent(const EventPtr<IEvent>& base_event) { return std::make_shared<MultiEvent<EventTypes...>>(base_event); }
 
 		std::unordered_map<std::type_index, std::vector<std::pair<std::function<void(const EventPtr<IEvent>&)>, FunctionSettings>>> m_single_event_handlers;
 		std::unordered_map<std::type_index, std::vector<std::pair<std::function<void(const EventPtr<IEvent>&)>, FunctionSettings>>> m_multi_event_handlers;

@@ -52,33 +52,62 @@ void RotateVoxel(MC::Application& app, u32 voxel_id, const glm::vec3& rotation_i
 	}
 }
 
-void MoveCameraOnKeyPress(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event) {
+void MoveCameraOnKeyPress(MC::Application& app, MC::MultiEventPtr<MC::KeyPressedEvent, MC::KeyHeldEvent> event) {
 	MC::Camera& camera = app.GetScene().GetCamera();
 
-	f32 delta_time = 0.3f;
+	f32 delta_time = 0.03f;
 
-	// Determine the direction based on the key pressed
-	switch (event->key) {
-	case GLFW_KEY_W:
-		camera.ProcessKeyboard(MC::CameraMovement::FORWARD, delta_time);
-		break;
-	case GLFW_KEY_S:
-		camera.ProcessKeyboard(MC::CameraMovement::BACKWARD, delta_time);
-		break;
-	case GLFW_KEY_A:
-		camera.ProcessKeyboard(MC::CameraMovement::LEFT, delta_time);
-		break;
-	case GLFW_KEY_D:
-		camera.ProcessKeyboard(MC::CameraMovement::RIGHT, delta_time);
-		break;
-	case GLFW_KEY_SPACE:
-		camera.ProcessKeyboard(MC::CameraMovement::UP, delta_time);
-		break;
-	case GLFW_KEY_LEFT_SHIFT:
-		camera.ProcessKeyboard(MC::CameraMovement::DOWN, delta_time);
-		break;
+	if (event->Is<MC::KeyPressedEvent>()) {
+		auto actual_event = event->Get<MC::KeyPressedEvent>();
+		switch (actual_event->key) {
+		case GLFW_KEY_W:
+			camera.ProcessKeyboard(MC::CameraMovement::FORWARD, delta_time);
+			break;
+		case GLFW_KEY_S:
+			camera.ProcessKeyboard(MC::CameraMovement::BACKWARD, delta_time);
+			break;
+		case GLFW_KEY_A:
+			camera.ProcessKeyboard(MC::CameraMovement::LEFT, delta_time);
+			break;
+		case GLFW_KEY_D:
+			camera.ProcessKeyboard(MC::CameraMovement::RIGHT, delta_time);
+			break;
+		case GLFW_KEY_SPACE:
+			camera.ProcessKeyboard(MC::CameraMovement::UP, delta_time);
+			break;
+		case GLFW_KEY_LEFT_SHIFT:
+			camera.ProcessKeyboard(MC::CameraMovement::DOWN, delta_time);
+			break;
 
+		}
 	}
+
+
+	else if (event->Is<MC::KeyHeldEvent>()) {
+		auto actual_event = event->Get<MC::KeyHeldEvent>();
+		switch (actual_event->key) {
+		case GLFW_KEY_W:
+			camera.ProcessKeyboard(MC::CameraMovement::FORWARD, delta_time);
+			break;
+		case GLFW_KEY_S:
+			camera.ProcessKeyboard(MC::CameraMovement::BACKWARD, delta_time);
+			break;
+		case GLFW_KEY_A:
+			camera.ProcessKeyboard(MC::CameraMovement::LEFT, delta_time);
+			break;
+		case GLFW_KEY_D:
+			camera.ProcessKeyboard(MC::CameraMovement::RIGHT, delta_time);
+			break;
+		case GLFW_KEY_SPACE:
+			camera.ProcessKeyboard(MC::CameraMovement::UP, delta_time);
+			break;
+		case GLFW_KEY_LEFT_SHIFT:
+			camera.ProcessKeyboard(MC::CameraMovement::DOWN, delta_time);
+			break;
+
+		}
+	}
+
 }
 
 
@@ -122,7 +151,7 @@ i32 main() {
 		std::cout << "Application shut down!\n";
 			})
 		.AddEventFunction<MC::KeyPressedEvent>(EscapeFunction)
-		.AddEventFunction<MC::KeyPressedEvent>(MoveCameraOnKeyPress)
+		.AddEventFunction<MC::KeyPressedEvent, MC::KeyHeldEvent>(MoveCameraOnKeyPress)
 		.AddEventFunction<MC::MouseMovedEvent>(RotateCameraOnMouseMove)
 		.Start();
 
