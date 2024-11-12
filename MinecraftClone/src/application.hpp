@@ -70,8 +70,7 @@ namespace MC {
 		f32                                                               m_delta_time;
 		std::mutex                                                        m_mutex;
 
-		// Gets lazy initialized on Application creation
-		Scene& m_scene;
+		std::unique_ptr<Scene> m_scene;
 	};
 
 	// Implementation of template methods

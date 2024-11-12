@@ -25,6 +25,7 @@ namespace MC {
 		m_window = glfwCreateWindow(m_window_data->width, m_window_data->height, m_window_data->title.c_str(), nullptr, nullptr);
 		glfwMakeContextCurrent(m_window);
 
+		glViewport(0, 0, width, height);
 
 		glfwSetWindowUserPointer(m_window, m_window_data.get());
 
@@ -33,6 +34,7 @@ namespace MC {
 			data.width = width;
 			data.height = height;
 			data.event_handler.PublishEvent<WindowResizedEvent>(std::make_shared<WindowResizedEvent>(width, height));
+			glViewport(0, 0, width, height);
 			});
 
 		glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) {

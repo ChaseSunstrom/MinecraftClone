@@ -6,8 +6,7 @@ namespace MC {
 		: m_thread_pool(std::move(tp))
 		, m_event_handler(std::make_unique<EventHandler>(*m_thread_pool))
 		, m_delta_time(delta_time)
-		, m_scene(Scene::GetScene())
-	{
+		, m_scene(std::make_unique<Scene>(*m_event_handler)){
 	}
 
 	Application::~Application() {
@@ -33,7 +32,7 @@ namespace MC {
 	void Application::Update() {
 		RunUpdateFunctions();
 		m_window->Update();
-		m_renderer->Render(m_scene);
+		m_renderer->Render(*m_scene);
 	}
 
 	void Application::Shutdown() {
@@ -140,12 +139,12 @@ namespace MC {
 	Application& Application::CreateWindow(const std::string& title, i32 width, i32 height) {
 		m_window = std::make_unique<Window>(title, width, height, *m_event_handler);
 		// Initialize scene after OpenGL has been initialized
-		m_scene.InitializeScene();
+		m_scene->InitializeScene();
 		m_renderer = std::make_unique<Renderer>();
 		return *this;
 	}
 
-	Scene& Application::GetScene() const { return m_scene; };
+	Scene& Application::GetScene() const { return *m_scene; };
 
 	Window& Application::GetWindow() const { return *m_window; }
 

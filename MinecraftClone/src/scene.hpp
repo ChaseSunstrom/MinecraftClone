@@ -3,6 +3,7 @@
 
 #include "voxel.hpp"
 #include "camera.hpp"
+#include "event_handler.hpp"
 #include <unordered_map>
 #include <memory>
 #include <optional>
@@ -11,7 +12,9 @@
 namespace MC {
     class Scene {
     public:
-        static Scene& GetScene();
+        Scene(EventHandler& event_handler);
+        ~Scene();
+
         void InsertVoxel(const Voxel& voxel);
         void RemoveVoxel(u32 voxel_id);
         void UpdateVoxel(const Voxel& updated_voxel);
@@ -28,9 +31,7 @@ namespace MC {
         glm::vec4 GetSkyColor() const;
 
     private:
-        Scene();
-        ~Scene();
-
+        
     private:
         std::unordered_map<VoxelColor, std::vector<Transform>> m_voxel_transforms;
         std::unordered_map<VoxelColor, std::vector<glm::mat4>> m_voxel_matrices;
@@ -40,6 +41,8 @@ namespace MC {
 
         std::unique_ptr<Camera> m_camera;
         glm::vec4 m_sky_color;
+
+        EventHandler& m_event_handler;
     };
 }
 

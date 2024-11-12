@@ -1,17 +1,19 @@
 #include "scene.hpp"
 
 namespace MC {
-    Scene::Scene()
-        : m_camera(std::make_unique<Camera>()),
-        m_sky_color(glm::vec4(0.2f, 0.3f, 0.4f, 1.0f)) {}
+    Scene::Scene(EventHandler& event_handler)
+        :
+        m_event_handler(event_handler),
+        m_camera(std::make_unique<Camera>()),
+        m_sky_color(glm::vec4(0.2f, 0.3f, 0.4f, 1.0f)) {
+        Camera& camera = *m_camera;
+        m_event_handler.SubscribeToEvent<WindowResizedEvent>([&camera](EventPtr<WindowResizedEvent> event) {
+            camera.OnWindowResize(event);
+            });
+    }
 
     Scene::~Scene() {
         Voxel::CleanupStaticBuffers();
-    }
-
-    Scene& Scene::GetScene() {
-        static Scene scene;
-        return scene;
     }
 
     void Scene::InitializeScene() {

@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "types.hpp"
+#include "event.hpp"
 
 namespace MC {
 
@@ -38,6 +39,8 @@ namespace MC {
 
         void SetAspectRatio(f32 aspect_ratio);
         void SetFOV(f32 fov);
+
+        void OnWindowResize(EventPtr<WindowResizedEvent> event);
 
     private:
         // Updates the front vector based on the current yaw and pitch

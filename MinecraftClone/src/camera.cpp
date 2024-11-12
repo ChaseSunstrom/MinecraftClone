@@ -15,6 +15,10 @@ namespace MC {
         return glm::perspective(glm::radians(m_fov), m_aspect_ratio, 0.1f, 100.0f);
     }
 
+    void Camera::OnWindowResize(EventPtr<WindowResizedEvent> event) {
+        m_aspect_ratio = event->width / event->height;
+    }
+
     void Camera::ProcessKeyboard(CameraMovement direction, f32 delta_time) {
         f32 velocity = m_movement_speed * delta_time;
         switch (direction) {
