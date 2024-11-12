@@ -25,6 +25,7 @@ namespace MC {
 		m_window = glfwCreateWindow(m_window_data->width, m_window_data->height, m_window_data->title.c_str(), nullptr, nullptr);
 		glfwMakeContextCurrent(m_window);
 
+
 		glfwSetWindowUserPointer(m_window, m_window_data.get());
 
 		glfwSetWindowSizeCallback(m_window, [](GLFWwindow* window, i32 width, i32 height) {
@@ -87,6 +88,9 @@ namespace MC {
 			});
 
 		glewInit();
+
+		glEnable(GL_DEPTH_TEST);
+
 	}
 
 	void Window::DestroyWindow() {

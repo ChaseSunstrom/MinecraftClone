@@ -2,8 +2,10 @@
 #define SPARK_APPLICATION_HPP
 
 #include "window.hpp"
+#include "renderer.hpp"
 #include "event_handler.hpp"
 #include "thread_pool.hpp"
+#include "scene.hpp"
 
 namespace MC {
 	class Application {
@@ -35,6 +37,8 @@ namespace MC {
 		EventHandler& GetEventHandler() const;
 		ThreadPool& GetThreadPool() const;
 
+		Scene& GetScene() const;
+
 		void SetDeltaTime(f32 delta_time);
 
 	private:
@@ -57,6 +61,7 @@ namespace MC {
 		std::unique_ptr<ThreadPool>                                             m_thread_pool;
 		std::unique_ptr<EventHandler>                                           m_event_handler;
 		std::unique_ptr<Window>                                                 m_window;
+		std::unique_ptr<Renderer> m_renderer;
 		ApplicationFunctionList                                           m_startup_functions;
 		ApplicationFunctionList                                           m_update_functions;
 		ApplicationFunctionList                                           m_shutdown_functions;
@@ -64,6 +69,9 @@ namespace MC {
 		std::vector<std::unique_ptr<IQueryEventFunctionWrapper>>                     m_query_event_functions;
 		f32                                                               m_delta_time;
 		std::mutex                                                        m_mutex;
+
+		// Gets lazy initialized on Application creation
+		Scene& m_scene;
 	};
 
 	// Implementation of template methods
