@@ -101,6 +101,7 @@
     <ClInclude Include="src\defines.hpp" />
     <ClInclude Include="src\event.hpp" />
     <ClInclude Include="src\event_handler.hpp" />
+    <ClInclude Include="src\fps.hpp" />
     <ClInclude Include="src\log.hpp" />
     <ClInclude Include="src\renderer.hpp" />
     <ClInclude Include="src\scene.hpp" />

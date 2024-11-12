@@ -1,4 +1,6 @@
 #include "application.hpp"
+#include "fps.hpp"
+
 
 void EscapeFunction(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event) {
 	if (event->key == GLFW_KEY_ESCAPE) {
@@ -12,7 +14,6 @@ void AddVoxels(MC::Application& app) {
 			MC::Voxel voxel((MC::VoxelColor)(i % 6), MC::Transform(glm::vec3(i, 0.0f, j)));
 			MC::Scene& scene = app.GetScene();
 			scene.InsertVoxel(voxel);
-			std::cout << "Inserted Voxel with ID: " << voxel.GetID() << "\n";
 		}
 	}
 }
@@ -89,7 +90,6 @@ void MoveCameraOnKeyPress(MC::Application& app, MC::MultiEventPtr<MC::KeyPressed
 		case GLFW_KEY_LEFT_SHIFT:
 			camera.ProcessKeyboard(MC::CameraMovement::DOWN, delta_time);
 			break;
-
 		}
 	}
 
@@ -151,13 +151,19 @@ void RotateCameraOnMouseMove(MC::Application& app, MC::EventPtr<MC::MouseMovedEv
 i32 main() {
 	MC::Application app;
 
+	MC::FPSCounter fps_counter;
+
+	// Add features via method chaining
 	app.CreateWindow("Minecraft Clone", 1000, 1000)
 		.AddStartupFunction([](MC::Application& app) {
-		std::cout << "Application initialized!\n";
+				LOG_INFO("Application initialized!");
 			})
 		.AddStartupFunction(AddVoxels)
 		.AddShutdownFunction([](MC::Application& app) {
-		std::cout << "Application shut down!\n";
+				LOG_INFO("Application shut down!");
+			})
+		.AddUpdateFunction([&fps_counter](MC::Application& app) {
+				fps_counter.Update();
 			})
 		.AddEventFunction<MC::KeyPressedEvent>(EscapeFunction)
 		.AddEventFunction<MC::MouseButtonPressedEvent>(PlaceVoxel)
