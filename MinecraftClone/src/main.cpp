@@ -52,10 +52,21 @@ void RotateVoxel(MC::Application& app, u32 voxel_id, const glm::vec3& rotation_i
 	}
 }
 
+void PlaceVoxel(MC::Application& app, MC::EventPtr<MC::MouseButtonPressedEvent> event) {
+	if (event->button == GLFW_MOUSE_BUTTON_RIGHT)
+	{
+		MC::Camera& camera = app.GetScene().GetCamera();
+		glm::vec3 pos = camera.GetPosition();
+		MC::Voxel voxel(MC::VoxelColor::GREEN, MC::Transform(glm::vec3(pos.x, pos.y, pos.z)));
+		MC::Scene& scene = app.GetScene();
+		scene.InsertVoxel(voxel);
+	}
+}
+
 void MoveCameraOnKeyPress(MC::Application& app, MC::MultiEventPtr<MC::KeyPressedEvent, MC::KeyHeldEvent> event) {
 	MC::Camera& camera = app.GetScene().GetCamera();
 
-	f32 delta_time = 0.03f;
+	f32 delta_time = 0.5f;
 
 	if (event->Is<MC::KeyPressedEvent>()) {
 		auto actual_event = event->Get<MC::KeyPressedEvent>();
@@ -82,7 +93,6 @@ void MoveCameraOnKeyPress(MC::Application& app, MC::MultiEventPtr<MC::KeyPressed
 		}
 	}
 
-
 	else if (event->Is<MC::KeyHeldEvent>()) {
 		auto actual_event = event->Get<MC::KeyHeldEvent>();
 		switch (actual_event->key) {
@@ -107,13 +117,12 @@ void MoveCameraOnKeyPress(MC::Application& app, MC::MultiEventPtr<MC::KeyPressed
 
 		}
 	}
-
 }
 
 
 static bool first_mouse = true;
-static f32 lastx = 400.0f; // Initial horizontal position
-static f32 lasty = 300.0f; // Initial vertical position
+static f32 lastx = 500.0f; // Initial horizontal position
+static f32 lasty = 500.0f; // Initial vertical position
 
 void RotateCameraOnMouseMove(MC::Application& app, MC::EventPtr<MC::MouseMovedEvent> event) {
 	MC::Camera& camera = app.GetScene().GetCamera();
@@ -151,6 +160,7 @@ i32 main() {
 		std::cout << "Application shut down!\n";
 			})
 		.AddEventFunction<MC::KeyPressedEvent>(EscapeFunction)
+		.AddEventFunction<MC::MouseButtonPressedEvent>(PlaceVoxel)
 		.AddEventFunction<MC::KeyPressedEvent, MC::KeyHeldEvent>(MoveCameraOnKeyPress)
 		.AddEventFunction<MC::MouseMovedEvent>(RotateCameraOnMouseMove)
 		.Start();
