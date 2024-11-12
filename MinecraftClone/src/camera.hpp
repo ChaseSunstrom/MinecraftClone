@@ -36,6 +36,10 @@ namespace MC {
         f32 GetFOV() const { return m_fov; }
         f32 GetMouseSensitivity() const { return m_mouse_sensitivity; }
         glm::vec3 GetPosition() const { return m_position; }
+        glm::vec3 GetFront() const { return m_front; }
+        glm::vec3 GetUp() const { return m_up; }
+        glm::vec3 GetRight() const { return m_right; }
+        glm::vec3 GetWorldUp() const { return m_world_up; }
 
         void SetAspectRatio(f32 aspect_ratio);
         void SetFOV(f32 fov);

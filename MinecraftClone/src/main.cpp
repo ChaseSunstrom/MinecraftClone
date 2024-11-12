@@ -10,7 +10,7 @@ void EscapeFunction(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> even
 
 void AddVoxels(MC::Application& app) {
 	for (i32 i = 0; i < 100; i++) {
-		for (i32 j = 0; j < 100; j++) {
+		for (i32 j = 0; j < 1000; j++) {
 			MC::Voxel voxel((MC::VoxelColor)(i % 6), MC::Transform(glm::vec3(i, 0.0f, j)));
 			MC::Scene& scene = app.GetScene();
 			scene.InsertVoxel(voxel);
@@ -19,48 +19,118 @@ void AddVoxels(MC::Application& app) {
 }
 
 
-void RotateVoxel(MC::Application& app, u32 voxel_id, const glm::vec3& rotation_increment) {
-	MC::Scene& scene = app.GetScene();
+void PlaceVoxel(MC::Application& app, MC::EventPtr<MC::MouseButtonPressedEvent> event) {
+	if (event->button == GLFW_MOUSE_BUTTON_RIGHT) {
+		MC::Scene& scene = app.GetScene();
+		auto voxel_hit_opt = scene.GetVoxelLookedAt(100.0f); // Adjust max_distance as needed
 
-	// Retrieve the voxel by its unique ID
-	std::optional<MC::Voxel> voxel_opt = scene.GetVoxel(voxel_id);
-	if (!voxel_opt.has_value()) {
-		std::cerr << "Error: Voxel with ID " << voxel_id << " not found.\n";
-		return;
-	}
+		if (voxel_hit_opt.has_value()) {
+			MC::VoxelHitInfo hit_info = voxel_hit_opt.value();
+			MC::Voxel target_voxel = hit_info.voxel;
+			MC::VoxelFace hit_face = hit_info.face;
 
-	// Create a copy of the voxel to modify
-	MC::Voxel voxel = voxel_opt.value();
+			std::cout << "Target Voxel ID: " << target_voxel.GetID() << "\n";
+			glm::vec3 target_pos = target_voxel.GetTransform().GetPos();
+			std::cout << "Target Voxel Position: ("
+				<< target_pos.x << ", "
+				<< target_pos.y << ", "
+				<< target_pos.z << ")\n";
+			std::cout << "Hit Face: ";
+			switch (hit_face) {
+			case MC::VoxelFace::POS_X: std::cout << "POS_X"; break;
+			case MC::VoxelFace::NEG_X: std::cout << "NEG_X"; break;
+			case MC::VoxelFace::POS_Y: std::cout << "POS_Y"; break;
+			case MC::VoxelFace::NEG_Y: std::cout << "NEG_Y"; break;
+			case MC::VoxelFace::POS_Z: std::cout << "POS_Z"; break;
+			case MC::VoxelFace::NEG_Z: std::cout << "NEG_Z"; break;
+			}
+			std::cout << "\n";
 
-	// Apply the rotation increment
-	voxel.Rotate(rotation_increment);
+			// Determine the step direction based on the hit face
+			glm::ivec3 step_dir(0, 0, 0);
+			switch (hit_face) {
+			case MC::VoxelFace::POS_X: step_dir.x = 1; break;
+			case MC::VoxelFace::NEG_X: step_dir.x = -1; break;
+			case MC::VoxelFace::POS_Y: step_dir.y = 1; break;
+			case MC::VoxelFace::NEG_Y: step_dir.y = -1; break;
+			case MC::VoxelFace::POS_Z: step_dir.z = 1; break;
+			case MC::VoxelFace::NEG_Z: step_dir.z = -1; break;
+			}
 
-	// Update the voxel in the scene
-	scene.UpdateVoxel(voxel);
+			// Calculate the new voxel position by adding the step direction
+			glm::vec3 new_voxel_pos = target_pos + glm::vec3(step_dir);
 
-	// Optional: Log the new rotation for verification
-	std::optional<MC::Voxel> updated_voxel_opt = scene.GetVoxel(voxel_id);
-	if (updated_voxel_opt.has_value()) {
-		MC::Voxel updated_voxel = updated_voxel_opt.value();
-		glm::vec3 new_rot = updated_voxel.GetRot();
-		std::cout << "Voxel with ID " << voxel_id << " rotated to ("
-			<< new_rot.x << ", "
-			<< new_rot.y << ", "
-			<< new_rot.z << ") degrees.\n";
-	}
-	else {
-		std::cerr << "Error: Failed to retrieve updated voxel with ID " << voxel_id << ".\n";
+			// Clamp the position to integer grid coordinates
+			glm::ivec3 grid_pos = glm::ivec3(
+				static_cast<i32>(std::round(new_voxel_pos.x)),
+				static_cast<i32>(std::round(new_voxel_pos.y)),
+				static_cast<i32>(std::round(new_voxel_pos.z))
+			);
+
+			std::cout << "New Voxel Position: ("
+				<< new_voxel_pos.x << ", "
+				<< new_voxel_pos.y << ", "
+				<< new_voxel_pos.z << ")\n";
+			std::cout << "Grid Position: ("
+				<< grid_pos.x << ", "
+				<< grid_pos.y << ", "
+				<< grid_pos.z << ")\n";
+
+			// Check if a voxel already exists at the new position
+			auto existing_voxel = scene.GetVoxelAtPosition(grid_pos);
+			if (!existing_voxel.has_value()) {
+				// Insert the new voxel
+				MC::Voxel new_voxel(MC::VoxelColor::GREEN, MC::Transform(new_voxel_pos));
+				scene.InsertVoxel(new_voxel);
+				std::cout << "Placed Voxel at ("
+					<< new_voxel_pos.x << ", "
+					<< new_voxel_pos.y << ", "
+					<< new_voxel_pos.z << ")\n";
+			}
+		}
+		else {
+			// Dont place voxels if none are looked at
+		}
 	}
 }
 
-void PlaceVoxel(MC::Application& app, MC::EventPtr<MC::MouseButtonPressedEvent> event) {
-	if (event->button == GLFW_MOUSE_BUTTON_RIGHT)
-	{
-		MC::Camera& camera = app.GetScene().GetCamera();
-		glm::vec3 pos = camera.GetPosition();
-		MC::Voxel voxel(MC::VoxelColor::GREEN, MC::Transform(glm::vec3(pos.x, pos.y, pos.z)));
+
+void RemoveVoxel(MC::Application& app, MC::EventPtr<MC::MouseButtonPressedEvent> event) {
+	if (event->button == GLFW_MOUSE_BUTTON_LEFT) {
 		MC::Scene& scene = app.GetScene();
-		scene.InsertVoxel(voxel);
+		auto voxel_hit_opt = scene.GetVoxelLookedAt(100.0f); // Adjust max_distance as needed
+
+		if (voxel_hit_opt.has_value()) {
+			MC::VoxelHitInfo hit_info = voxel_hit_opt.value();
+			MC::Voxel target_voxel = hit_info.voxel;
+			MC::VoxelFace hit_face = hit_info.face;
+
+			std::cout << "Target Voxel ID: " << target_voxel.GetID() << "\n";
+			glm::vec3 target_pos = target_voxel.GetTransform().GetPos();
+			std::cout << "Target Voxel Position: ("
+				<< target_pos.x << ", "
+				<< target_pos.y << ", "
+				<< target_pos.z << ")\n";
+			std::cout << "Hit Face: ";
+			switch (hit_face) {
+			case MC::VoxelFace::POS_X: std::cout << "POS_X"; break;
+			case MC::VoxelFace::NEG_X: std::cout << "NEG_X"; break;
+			case MC::VoxelFace::POS_Y: std::cout << "POS_Y"; break;
+			case MC::VoxelFace::NEG_Y: std::cout << "NEG_Y"; break;
+			case MC::VoxelFace::POS_Z: std::cout << "POS_Z"; break;
+			case MC::VoxelFace::NEG_Z: std::cout << "NEG_Z"; break;
+			}
+			std::cout << "\n";
+
+			scene.RemoveVoxel(target_voxel.GetID());
+			std::cout << "Removed Voxel with ID: " << target_voxel.GetID() << " at position ("
+				<< target_pos.x << ", "
+				<< target_pos.y << ", "
+				<< target_pos.z << ")\n";
+		}
+		else {
+			std::cout << "No voxel to remove in the line of sight.\n";
+		}
 	}
 }
 
@@ -119,7 +189,6 @@ void MoveCameraOnKeyPress(MC::Application& app, MC::MultiEventPtr<MC::KeyPressed
 	}
 }
 
-
 static bool first_mouse = true;
 static f32 lastx = 500.0f; // Initial horizontal position
 static f32 lasty = 500.0f; // Initial vertical position
@@ -166,7 +235,14 @@ i32 main() {
 				fps_counter.Update();
 			})
 		.AddEventFunction<MC::KeyPressedEvent>(EscapeFunction)
-		.AddEventFunction<MC::MouseButtonPressedEvent>(PlaceVoxel)
+		.AddEventFunction<MC::MouseButtonPressedEvent>([&](MC::Application& app, MC::EventPtr<MC::MouseButtonPressedEvent> event) {
+		if (event->button == GLFW_MOUSE_BUTTON_RIGHT) {
+			PlaceVoxel(app, event);
+		}
+		else if (event->button == GLFW_MOUSE_BUTTON_LEFT) {
+			RemoveVoxel(app, event);
+		}
+			})
 		.AddEventFunction<MC::KeyPressedEvent, MC::KeyHeldEvent>(MoveCameraOnKeyPress)
 		.AddEventFunction<MC::MouseMovedEvent>(RotateCameraOnMouseMove)
 		.Start();

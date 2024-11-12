@@ -102,7 +102,9 @@
     <ClInclude Include="src\event.hpp" />
     <ClInclude Include="src\event_handler.hpp" />
     <ClInclude Include="src\fps.hpp" />
+    <ClInclude Include="src\hash.hpp" />
     <ClInclude Include="src\log.hpp" />
+    <ClInclude Include="src\ray.hpp" />
     <ClInclude Include="src\renderer.hpp" />
     <ClInclude Include="src\scene.hpp" />
     <ClInclude Include="src\shader.hpp" />
@@ -111,6 +113,8 @@
     <ClInclude Include="src\types.hpp" />
     <ClInclude Include="src\vertex.hpp" />
     <ClInclude Include="src\voxel.hpp" />
+    <ClInclude Include="src\voxel_face.hpp" />
+    <ClInclude Include="src\voxel_hit_info.hpp" />
     <ClInclude Include="src\window.hpp" />
   </ItemGroup>
   <ItemGroup>

@@ -41,6 +41,15 @@ namespace MC {
 		m_transform(transform),
 		m_neighboring_faces(neighboring_faces),
 		m_color(VoxelColorToColor(color)) { }
+
+		Voxel& operator=(const Voxel& voxel) {
+			m_id = s_next_id++;
+			m_voxel_color = voxel.m_voxel_color;
+			m_transform = voxel.m_transform;
+			m_neighboring_faces = voxel.m_neighboring_faces;
+			m_color = voxel.m_color;
+			return *this;
+		}
 		
 		VoxelColor GetVoxelColor() const;
 		glm::vec4 GetColor() const;
@@ -48,6 +57,7 @@ namespace MC {
 		NeighboringFaces GetNeighboringFaces() const;
 
 		u32 GetID() const { return m_id; }
+		void SetID(u32 id) { m_id = id; }
 
 		void SetVoxelColor(VoxelColor color);
 		void SetColor(const glm::vec4& color);
