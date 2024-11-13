@@ -14,23 +14,22 @@ namespace MC {
     }
 
     void Chunk::SetVoxel(const glm::ivec3& local_pos, const Voxel& voxel) {
-        // Ensure local_pos is within chunk bounds
         if (local_pos.x < 0 || local_pos.x >= CHUNK_SIZE ||
             local_pos.y < 0 || local_pos.y >= CHUNK_SIZE ||
             local_pos.z < 0 || local_pos.z >= CHUNK_SIZE) {
             return;
         }
 
-
         u32 voxel_id = voxel.GetID();
         m_voxels[voxel_id] = voxel;
-        m_voxel_ids[local_pos.x][local_pos.y][local_pos.z] = voxel_id;
+        m_voxel_ids[local_pos.z][local_pos.y][local_pos.x] = voxel_id;
         m_needs_mesh_update = true;
 
         Voxel voxel_copy = voxel;
         voxel_copy.SetLocalPosition(local_pos);
         m_voxels[voxel_id] = voxel_copy;
     }
+
 
     std::optional<Voxel> Chunk::GetVoxel(const glm::ivec3& local_pos) const {
         if (local_pos.x < 0 || local_pos.x >= CHUNK_SIZE ||
@@ -39,9 +38,9 @@ namespace MC {
             return std::nullopt;
         }
 
-        auto voxel_id_opt  = m_voxel_ids[local_pos.x][local_pos.y][local_pos.z];
-        if (voxel_id_opt .has_value()) {
-            u32 voxel_id = voxel_id_opt .value();
+        auto voxel_id_opt = m_voxel_ids[local_pos.z][local_pos.y][local_pos.x];
+        if (voxel_id_opt.has_value()) {
+            u32 voxel_id = voxel_id_opt.value();
             auto it = m_voxels.find(voxel_id);
             if (it != m_voxels.end()) {
                 return it->second;
@@ -49,6 +48,7 @@ namespace MC {
         }
         return std::nullopt;
     }
+
 
     void Chunk::RemoveVoxel(const glm::ivec3& local_pos) {
         if (local_pos.x < 0 || local_pos.x >= CHUNK_SIZE ||
@@ -85,7 +85,6 @@ namespace MC {
     bool Chunk::IsMeshDataUploaded() const {
         return m_mesh_data_uploaded;
     }
-
 
     void Chunk::SetNeedsMeshUpdate(bool needsUpdate) {
         m_needs_mesh_update = needsUpdate;
@@ -202,4 +201,19 @@ namespace MC {
         m_needs_mesh_update = false;
         m_mesh_data_uploaded = true;
     }
+
+    void Chunk::Update(const Scene& scene, ThreadPool& tp) {
+        if (NeedsMeshUpdate() && !HasMeshDataGenerated()) {
+            // Enqueue mesh generation
+            mesh_generation_future = tp.Enqueue(TaskPriority::VERY_HIGH, true, [this, &scene]() {
+                    GenerateMeshData(scene);
+                    SetNeedsMeshUpdate(false);
+                });
+        }
+        else if (HasMeshDataGenerated() && !IsMeshDataUploaded()) {
+            // Upload mesh data on the main thread
+            UploadMeshData();
+        }
+    }
+
 }

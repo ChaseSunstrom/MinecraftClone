@@ -9,29 +9,19 @@
 #include <atomic>
 
 namespace MC {
-
-	enum class VoxelColor {
-		RED,
-		GREEN,
-		BLUE,
-		BLACK,
-		PINK,
-		WHITE,
-		PURPLE,
-		ORANGE,
-		YELLOW,
-		BROWN,
-		CYAN,
-		MAGENTA,
-		GRAY,
-		LIGHT_BLUE,
-		LIGHT_GREEN,
-		DARK_RED
+	enum class VoxelType {
+		AIR,
+		GRASS,
+		DIRT,
+		STONE,
+		SAND,
+		WOOD,
+		LEAVES,
 	};
 
-	glm::vec4 VoxelColorToColor(VoxelColor color);
+	// Function to map VoxelType to color
+	glm::vec4 VoxelTypeToColor(VoxelType type);
 
-	// Since we are only using Voxels (for now atleast) we will just store the VAO, VBO, EBO, statically
 	class Voxel {
 	public:
 		enum FaceIndex {
@@ -43,68 +33,49 @@ namespace MC {
 			NEG_Z
 		};
 
-		Voxel() : m_id(s_next_id++), m_voxel_color(VoxelColor::BLACK), visible_faces(0x3F), m_color(VoxelColorToColor(m_voxel_color)), m_local_position(0) {}
+		Voxel();
+		Voxel(VoxelType type, const Transform& transform = Transform());
 
-		Voxel(VoxelColor color, const Transform& transform)
-			: m_id(s_next_id++), m_voxel_color(color), m_transform(transform), m_color(VoxelColorToColor(color)), visible_faces(0x3F), m_local_position(0) {}
+		bool IsFaceVisible(FaceIndex face) const;
+		void SetFaceVisible(FaceIndex face, bool visible);
 
-		bool IsFaceVisible(FaceIndex face) const {
-			return (visible_faces & (1 << face)) != 0;
-		}
-
-		void SetFaceVisible(FaceIndex face, bool visible) {
-			if (visible) {
-				visible_faces |= (1 << face);
-			}
-			else {
-				visible_faces &= ~(1 << face);
-			}
-		}
-		
-		VoxelColor GetVoxelColor() const;
+		VoxelType GetVoxelType() const;
 		glm::vec4 GetColor() const;
 		Transform GetTransform() const;
-
-		u32 GetID() const { return m_id; }
-		void SetID(u32 id) { m_id = id; }
-
-		void SetVoxelColor(VoxelColor color);
-		void SetColor(const glm::vec4& color);
-		void SetTransform(const Transform& transform);
-
-		void Move(const glm::vec3& pos);
-		void Rotate(const glm::vec3& rot);
-		void Scale(const glm::vec3& scale);
-
+		u32 GetID() const;
 		glm::vec3 GetPos() const;
 		glm::vec3 GetRot() const;
 		glm::vec3 GetScale() const;
+		glm::ivec3 GetLocalPosition() const;
 
+		void SetVoxelType(VoxelType type);
+		void SetColor(const glm::vec4& color);
+		void SetTransform(const Transform& transform);
+		void SetID(u32 id);
+		void Move(const glm::vec3& pos);
+		void Rotate(const glm::vec3& rot);
+		void Scale(const glm::vec3& scale);
+		void SetLocalPosition(const glm::ivec3& local_pos);
+
+		// Static methods for buffer management
 		static void InitializeStaticBuffers();
 		static void CleanupStaticBuffers();
 		static u32 GetVao();
 		static u32 GetVbo();
 		static u32 GetEbo();
 
-		void SetLocalPosition(const glm::ivec3& local_pos) {
-			m_local_position = local_pos;
-		}
-
-		glm::ivec3 GetLocalPosition() const {
-			return m_local_position;
-		}
 	public:
 		uint8_t visible_faces;
+
 	private:
 		Transform m_transform;
-		// Color for now, textures will be implemented later
-		VoxelColor m_voxel_color;
+		VoxelType m_voxel_type;
 		glm::ivec3 m_local_position;
 		glm::vec4 m_color;
+
 		static u32 s_vao;
 		static u32 s_vbo;
 		static u32 s_ebo;
-
 
 		static std::atomic<u32> s_next_id; // Atomic for thread safety
 		u32 m_id;

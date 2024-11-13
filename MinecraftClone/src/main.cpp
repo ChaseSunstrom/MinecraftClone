@@ -21,149 +21,16 @@ void ExpandCamera(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event)
 	}
 }
 
-void GenerateWorld(MC::Application& app) {
-	MC::Scene& scene = app.GetScene();
-
-	const i32 world_width = 1000;
-	const i32 world_depth = 1000;
-	const f32 scale = 0.1f;
-	const i32 max_height = 20;
-	const f32 biome_scale = 0.01f;
-
-	// Random seed for noise offset
-	u32 seed = static_cast<u32>(std::chrono::system_clock::now().time_since_epoch().count());
-	std::mt19937 rng(seed);
-	std::uniform_real_distribution<f32> dist(-10000.0f, 10000.0f);
-	f32 x_offset = dist(rng);
-	f32 z_offset = dist(rng);
-
-	// Determine the number of threads
-	u32 num_threads = std::thread::hardware_concurrency();
-	if (num_threads == 0) num_threads = 4; // Default to 4 if not available
-
-	std::vector<std::thread> threads;
-	std::vector<std::vector<MC::Voxel>> voxel_batches(num_threads);
-
-	for (u32 t = 0; t < num_threads; ++t) {
-		threads.emplace_back([&, t]() {
-			// Each thread handles a range of x values
-			i32 x_start = t * world_width / num_threads;
-			i32 x_end = (t + 1) * world_width / num_threads;
-
-			std::vector<MC::Voxel>& voxels = voxel_batches[t];
-
-			for (i32 x = x_start; x < x_end; ++x) {
-				for (i32 z = 0; z < world_depth; ++z) {
-					// Apply random offsets to make the world different each time
-					f32 noise_value = glm::perlin(glm::vec2((x + x_offset) * scale, (z + z_offset) * scale));
-					noise_value = (noise_value + 1.0f) / 2.0f;
-					i32 height = static_cast<i32>(noise_value * max_height);
-
-					f32 biome_noise = glm::perlin(glm::vec2((x + x_offset) * biome_scale, (z + z_offset) * biome_scale));
-					biome_noise = (biome_noise + 1.0f) / 2.0f;
-
-					enum BiomeType {
-						DESERT,
-						PLAINS,
-						FOREST,
-						SNOWY,
-						MOUNTAINS,
-						OCEAN
-					};
-
-					BiomeType biome;
-					if (biome_noise < 0.2f) {
-						biome = DESERT;
-					}
-					else if (biome_noise < 0.4f) {
-						biome = PLAINS;
-					}
-					else if (biome_noise < 0.6f) {
-						biome = OCEAN;
-					}
-					else if (biome_noise < 0.8f) {
-						biome = SNOWY;
-					}
-					else {
-						biome = MOUNTAINS;
-					}
-
-					// Adjust height based on biome
-					if (biome == OCEAN) {
-						height = 3;
-					}
-					else if (biome == MOUNTAINS) {
-						height *= 2;
-					}
-					else if (biome == DESERT || biome == PLAINS) {
-						height /= 2;
-					}
-
-					height = std::clamp(height, 1, max_height);
-
-					// Generate voxels for the column
-					for (i32 y = 0; y <= height; ++y) {
-						MC::VoxelColor voxel_color;
-
-						if (biome == OCEAN) {
-							voxel_color = MC::VoxelColor::BLUE; // Water
-						}
-						else if (biome == DESERT) {
-							voxel_color = MC::VoxelColor::YELLOW;
-						}
-						else if (biome == PLAINS || biome == FOREST) {
-							voxel_color = (y == height) ? MC::VoxelColor::GREEN : MC::VoxelColor::BROWN; // Grass or Dirt
-						}
-						else if (biome == SNOWY) {
-							voxel_color = (y == height) ? MC::VoxelColor::WHITE : MC::VoxelColor::GRAY; // Snow or Stone
-						}
-						else if (biome == MOUNTAINS) {
-							if (y >= height - 2) {
-								voxel_color = MC::VoxelColor::WHITE; // Snow
-							}
-							else if (y >= height - 5) {
-								voxel_color = MC::VoxelColor::GRAY; // Stone
-							}
-							else {
-								voxel_color = MC::VoxelColor::BROWN; // Dirt
-							}
-						}
-
-						MC::Voxel voxel(voxel_color, MC::Transform(glm::vec3(x, y, z)));
-						voxels.push_back(voxel);
-					}
-				}
-			}
-			});
-	}
-
-	// Wait for all threads to finish
-	for (auto& thread : threads) {
-		thread.join();
-	}
-
-	// Collect all voxels and insert them into the scene
-	std::vector<MC::Voxel> all_voxels;
-	for (auto& batch : voxel_batches) {
-		all_voxels.insert(all_voxels.end(), batch.begin(), batch.end());
-	}
-
-	// Insert all voxels into the scene using the bulk insertion method
-	scene.InsertVoxels(all_voxels);
-}
-
-
-
 void ZoomCamera(MC::Application& app, MC::EventPtr<MC::MouseScrolledEvent> event) {
 	MC::Camera& camera = app.GetScene().GetCamera();
 	camera.SetFOV(camera.GetFOV() - event->y);
 }
 
-static MC::VoxelColor color = MC::VoxelColor::GREEN;
+static MC::VoxelType color = MC::VoxelType::GRASS;
 
 void SwitchColor(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event) {
 	if (event->key >= GLFW_KEY_0 && event->key <= GLFW_KEY_9) {
-		color = (MC::VoxelColor)(event->key % 9);
+		color = (MC::VoxelType)(event->key % 9);
 	}
 }
 
@@ -375,7 +242,6 @@ i32 main() {
 		.AddStartupFunction([](MC::Application& app) {
 				LOG_INFO("Application initialized!");
 			})
-		.AddStartupFunction(GenerateWorld)
 		.AddShutdownFunction([](MC::Application& app) {
 				LOG_INFO("Application shut down!");
 			})

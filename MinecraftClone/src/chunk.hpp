@@ -4,6 +4,7 @@
 #include "voxel.hpp"
 #include "types.hpp"
 #include "hash.hpp"
+#include "thread_pool.hpp"
 #include <unordered_map>
 #include <glm/glm.hpp>
 #include <array>
@@ -43,6 +44,8 @@ namespace MC {
 
         void GenerateMeshData(const Scene& scene);
         void UploadMeshData();
+
+        void Update(const Scene& scene, ThreadPool& tp);
 
         u32 GetVAO() const {
             return m_vao;

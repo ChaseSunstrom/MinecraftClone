@@ -6,7 +6,7 @@ namespace MC {
 		: m_thread_pool(std::move(tp))
 		, m_event_handler(std::make_unique<EventHandler>(*m_thread_pool))
 		, m_delta_time(delta_time)
-		, m_scene(std::make_unique<Scene>(*m_event_handler)){
+		, m_scene(std::make_unique<Scene>(*m_event_handler, *m_thread_pool)){
 	}
 
 	Application::~Application() {
@@ -31,6 +31,8 @@ namespace MC {
 
 	void Application::Update() {
 		RunUpdateFunctions();
+		m_scene->UpdateChunksAroundPlayer();
+		m_scene->UpdateChunks();
 		m_window->Update();
 		m_renderer->Render(*m_thread_pool, *m_scene);
 	}

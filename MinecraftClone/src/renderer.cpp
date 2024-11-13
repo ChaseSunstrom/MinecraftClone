@@ -59,25 +59,6 @@ namespace MC {
 
         auto& chunks = scene.GetChunks();
 
-        for (auto& [chunk_pos, chunk] : chunks) {
-            if (chunk.NeedsMeshUpdate() && !chunk.HasMeshDataGenerated()) {
-                chunk.mesh_generation_future = std::async(std::launch::async, [&chunk, &scene]() {
-                        chunk.GenerateMeshData(scene);
-                    });
-            }
-        }
-
-        tp.SyncRegisteredTasks();
-
-        for (auto& [chunk_pos, chunk] : chunks) {
-            if (chunk.mesh_generation_future.valid()) {
-                chunk.mesh_generation_future.wait();
-            }
-            if (chunk.HasMeshDataGenerated() && !chunk.IsMeshDataUploaded()) {
-                chunk.UploadMeshData();
-            }
-        }
-
         // Now proceed to rendering
         for (auto& [chunk_pos, chunk] : chunks) {
             // Skip chunks that are not visible
@@ -90,7 +71,7 @@ namespace MC {
             }
 
             // Ensure mesh data is uploaded
-            if (!chunk.IsMeshDataUploaded()) {
+            if (!chunk->IsMeshDataUploaded()) {
                 continue; // Skip if mesh data is not ready
             }
 
@@ -99,10 +80,10 @@ namespace MC {
             m_shader.SetMat4("model", model);
 
             // Bind chunk-specific VAO
-            glBindVertexArray(chunk.GetVAO());
+            glBindVertexArray(chunk->GetVAO());
 
             // Draw the chunk
-            glDrawElements(GL_TRIANGLES, chunk.GetIndexCount(), GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, chunk->GetIndexCount(), GL_UNSIGNED_INT, 0);
 
             glBindVertexArray(0);
         }
