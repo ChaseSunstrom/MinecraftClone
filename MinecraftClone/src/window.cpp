@@ -25,6 +25,9 @@ namespace MC {
 		m_window = glfwCreateWindow(m_window_data->width, m_window_data->height, m_window_data->title.c_str(), nullptr, nullptr);
 		glfwMakeContextCurrent(m_window);
 
+		// Turns off vsync
+		glfwSwapInterval(false);
+
 		glViewport(0, 0, width, height);
 
 		glfwSetWindowUserPointer(m_window, m_window_data.get());
