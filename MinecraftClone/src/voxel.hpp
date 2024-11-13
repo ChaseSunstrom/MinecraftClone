@@ -9,15 +9,6 @@
 #include <atomic>
 
 namespace MC {
-	struct NeighboringFaces {
-		bool front : 1;
-		bool back : 1;
-		bool top : 1;
-		bool bottom : 1;
-		bool left : 1;
-		bool right : 1;
-		bool align2 : 2;
-	};
 
 	enum class VoxelColor {
 		RED,
@@ -43,26 +34,35 @@ namespace MC {
 	// Since we are only using Voxels (for now atleast) we will just store the VAO, VBO, EBO, statically
 	class Voxel {
 	public:
-		Voxel(VoxelColor color, const Transform& transform = Transform(), NeighboringFaces neighboring_faces = {})
-		: m_id(s_next_id++), // Assign unique ID
-		m_voxel_color(color),
-		m_transform(transform),
-		m_neighboring_faces(neighboring_faces),
-		m_color(VoxelColorToColor(color)) { }
+		enum FaceIndex {
+			POS_X = 0,
+			NEG_X,
+			POS_Y,
+			NEG_Y,
+			POS_Z,
+			NEG_Z
+		};
 
-		Voxel& operator=(const Voxel& voxel) {
-			m_id = s_next_id++;
-			m_voxel_color = voxel.m_voxel_color;
-			m_transform = voxel.m_transform;
-			m_neighboring_faces = voxel.m_neighboring_faces;
-			m_color = voxel.m_color;
-			return *this;
+
+		Voxel(VoxelColor color, const Transform& transform)
+			: m_id(s_next_id++), m_voxel_color(color), m_transform(transform), m_color(VoxelColorToColor(color)), visible_faces(0x3F) {}
+
+		bool IsFaceVisible(FaceIndex face) const {
+			return (visible_faces & (1 << face)) != 0;
+		}
+
+		void SetFaceVisible(FaceIndex face, bool visible) {
+			if (visible) {
+				visible_faces |= (1 << face);
+			}
+			else {
+				visible_faces &= ~(1 << face);
+			}
 		}
 		
 		VoxelColor GetVoxelColor() const;
 		glm::vec4 GetColor() const;
 		Transform GetTransform() const;
-		NeighboringFaces GetNeighboringFaces() const;
 
 		u32 GetID() const { return m_id; }
 		void SetID(u32 id) { m_id = id; }
@@ -70,7 +70,6 @@ namespace MC {
 		void SetVoxelColor(VoxelColor color);
 		void SetColor(const glm::vec4& color);
 		void SetTransform(const Transform& transform);
-		void SetNeighboringFaces(NeighboringFaces neighboring_faces);
 
 		void Move(const glm::vec3& pos);
 		void Rotate(const glm::vec3& rot);
@@ -85,9 +84,10 @@ namespace MC {
 		static u32 GetVao();
 		static u32 GetVbo();
 		static u32 GetEbo();
+	public:
+		uint8_t visible_faces;
 	private:
 		Transform m_transform;
-		NeighboringFaces m_neighboring_faces;
 		// Color for now, textures will be implemented later
 		VoxelColor m_voxel_color;
 		glm::vec4 m_color;

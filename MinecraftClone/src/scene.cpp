@@ -32,29 +32,53 @@ namespace MC {
 
     void Scene::InsertVoxel(const Voxel& voxel) {
         std::lock_guard<std::mutex> lock(m_voxel_mutex);
-        u32 id = voxel.GetID();
-        glm::ivec3 grid_pos = glm::ivec3(
-            static_cast<i32>(std::floor(voxel.GetTransform().GetPos().x)),
-            static_cast<i32>(std::floor(voxel.GetTransform().GetPos().y)),
-            static_cast<i32>(std::floor(voxel.GetTransform().GetPos().z))
-        );
+        glm::ivec3 grid_pos = glm::ivec3(glm::floor(voxel.GetTransform().GetPos()));
 
-        // Check if a voxel already exists at the grid position
+        // Check for existing voxel at the position
         if (m_position_to_id.find(grid_pos) != m_position_to_id.end()) {
             std::cerr << "Cannot insert voxel: A voxel already exists at ("
-                << grid_pos.x << ", "
-                << grid_pos.y << ", "
-                << grid_pos.z << ").\n";
+                << grid_pos.x << ", " << grid_pos.y << ", " << grid_pos.z << ").\n";
             return;
         }
 
-        m_voxels.emplace(voxel.GetID(), voxel);
-        m_voxel_transforms[voxel.GetVoxelColor()].push_back(voxel.GetTransform());
-        m_voxel_matrices[voxel.GetVoxelColor()].push_back(voxel.GetTransform().GetTransform());
+        // Copy the voxel and initialize all faces as visible
+        Voxel voxel_copy = voxel;
+        voxel_copy.visible_faces = 0x3F; // All faces visible
 
-        // Map grid position to voxel ID
-        m_position_to_id.emplace(grid_pos, voxel.GetID());
+        // Directions for neighboring voxels
+        static const glm::ivec3 directions[6] = {
+            {1, 0, 0},  // POS_X
+            {-1, 0, 0}, // NEG_X
+            {0, 1, 0},  // POS_Y
+            {0, -1, 0}, // NEG_Y
+            {0, 0, 1},  // POS_Z
+            {0, 0, -1}  // NEG_Z
+        };
+
+        // Update visibility based on neighbors
+        for (int i = 0; i < 6; ++i) {
+            glm::ivec3 neighbor_pos = grid_pos + directions[i];
+            auto neighbor_it = m_position_to_id.find(neighbor_pos);
+            if (neighbor_it != m_position_to_id.end()) {
+                u32 neighbor_id = neighbor_it->second;
+                auto voxel_it = m_voxels.find(neighbor_id);
+                if (voxel_it != m_voxels.end()) {
+                    Voxel& neighbor_voxel = voxel_it->second;
+                    // Hide the adjacent faces
+                    neighbor_voxel.SetFaceVisible(static_cast<Voxel::FaceIndex>((i ^ 1)), false);
+                    voxel_copy.SetFaceVisible(static_cast<Voxel::FaceIndex>(i), false);
+                }
+            }
+        }
+
+        // Insert the voxel
+        m_voxels.emplace(voxel_copy.GetID(), voxel_copy);
+        m_voxel_transforms[voxel_copy.GetVoxelColor()].push_back(voxel_copy.GetTransform());
+        m_voxel_matrices[voxel_copy.GetVoxelColor()].push_back(voxel_copy.GetTransform().GetTransform());
+        m_position_to_id.emplace(grid_pos, voxel_copy.GetID());
     }
+
+
     void Scene::RemoveVoxel(u32 voxel_id) {
         std::lock_guard<std::mutex> lock(m_voxel_mutex);
         auto it = m_voxels.find(voxel_id);
@@ -64,27 +88,43 @@ namespace MC {
         }
 
         Voxel voxel_to_remove = it->second;
+        glm::ivec3 grid_pos = glm::ivec3(glm::floor(voxel_to_remove.GetTransform().GetPos()));
 
-        // Remove from m_voxel_transforms
+        // Directions for neighboring voxels
+        static const glm::ivec3 directions[6] = {
+            {1, 0, 0},  // POS_X
+            {-1, 0, 0}, // NEG_X
+            {0, 1, 0},  // POS_Y
+            {0, -1, 0}, // NEG_Y
+            {0, 0, 1},  // POS_Z
+            {0, 0, -1}  // NEG_Z
+        };
+
+        // Update neighbors to make their faces visible
+        for (int i = 0; i < 6; ++i) {
+            glm::ivec3 neighbor_pos = grid_pos + directions[i];
+            auto neighbor_it = m_position_to_id.find(neighbor_pos);
+            if (neighbor_it != m_position_to_id.end()) {
+                u32 neighbor_id = neighbor_it->second;
+                auto voxel_it = m_voxels.find(neighbor_id);
+                if (voxel_it != m_voxels.end()) {
+                    Voxel& neighbor_voxel = voxel_it->second;
+                    neighbor_voxel.SetFaceVisible(static_cast<Voxel::FaceIndex>((i ^ 1)), true);
+                }
+            }
+        }
+
+        // Remove voxel from data structures
         auto& transforms = m_voxel_transforms[voxel_to_remove.GetVoxelColor()];
         transforms.erase(std::remove(transforms.begin(), transforms.end(), voxel_to_remove.GetTransform()), transforms.end());
 
-        // Remove from m_voxel_matrices
         auto& matrices = m_voxel_matrices[voxel_to_remove.GetVoxelColor()];
         matrices.erase(std::remove(matrices.begin(), matrices.end(), voxel_to_remove.GetTransform().GetTransform()), matrices.end());
 
-        // Remove from m_position_to_id
-        glm::vec3 pos = voxel_to_remove.GetTransform().GetPos();
-        glm::ivec3 grid_pos = glm::ivec3(
-            static_cast<i32>(std::floor(pos.x)),
-            static_cast<i32>(std::floor(pos.y)),
-            static_cast<i32>(std::floor(pos.z))
-        );
         m_position_to_id.erase(grid_pos);
-
-        // Remove from m_voxels
         m_voxels.erase(it);
     }
+
 
     void Scene::UpdateVoxel(const Voxel& updated_voxel) {
         std::lock_guard<std::mutex> lock(m_voxel_mutex);

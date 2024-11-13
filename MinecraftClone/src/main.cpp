@@ -10,33 +10,35 @@ void EscapeFunction(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> even
 	}
 }
 
+void ExpandCamera(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event) {
+	MC::Camera& camera = app.GetScene().GetCamera();
+	if (event->key == GLFW_KEY_EQUAL) {
+		camera.IncreaseFar(10);
+	}
+	else if (event->key == GLFW_KEY_MINUS) {
+		camera.DecreaseFar(10);
+	}
+}
+
 void GenerateWorld(MC::Application& app) {
 	MC::Scene& scene = app.GetScene();
+	
+	const i32 world_width = 250;
+	const i32 world_depth = 250;
+	const f32 scale = 0.1f;
+	const i32 max_height = 10; 
 
-	// Parameters for world generation
-	const i32 world_width = 100;
-	const i32 world_depth = 100;
-	const f32 scale = 0.1f; // Scale of the noise
-	const i32 max_height = 10; // Maximum height of terrain
-
-	// Parameters for biome generation
-	const f32 biome_scale = 0.01f; // Larger scale for biomes
+	const f32 biome_scale = 0.01f;
 
 	for (i32 x = 0; x < world_width; ++x) {
 		for (i32 z = 0; z < world_depth; ++z) {
-			// Generate height using Perlin noise
 			f32 noise_value = glm::perlin(glm::vec2(x * scale, z * scale));
-			// Map noiseValue from [-1,1] to [0,1]
 			noise_value = (noise_value + 1.0f) / 2.0f;
-			// Compute height
 			i32 height = static_cast<i32>(noise_value * max_height);
 
-			// Generate biome using another layer of Perlin noise
 			f32 biome_noise = glm::perlin(glm::vec2(x * biome_scale, z * biome_scale));
-			// Map biomeNoise from [-1,1] to [0,1]
 			biome_noise = (biome_noise + 1.0f) / 2.0f;
 
-			// Determine biome based on biomeNoise
 			enum BiomeType {
 				DESERT,
 				PLAINS,
@@ -45,6 +47,7 @@ void GenerateWorld(MC::Application& app) {
 				MOUNTAINS,
 				OCEAN
 			};
+
 			BiomeType biome;
 			if (biome_noise < 0.2f) {
 				biome = DESERT;
@@ -62,24 +65,20 @@ void GenerateWorld(MC::Application& app) {
 				biome = MOUNTAINS;
 			}
 
-			// Adjust height based on biome
 			if (biome == OCEAN) {
-				height = 3; // Low height for ocean
+				height = 3;
 			}
 			else if (biome == MOUNTAINS) {
-				height += 10; // Increase height for mountains
+				height += 10;
 			}
 			else if (biome == DESERT) {
-				height -= 2; // Slightly lower for desert
+				height -= 2;
 			}
 
-			// Clamp height
 			if (height < 1) height = 1;
 			if (height > max_height) height = max_height;
 
-			// For each y from 0 up to height, create a voxel
 			for (i32 y = 0; y <= height; ++y) {
-				// Determine voxel color based on height and biome
 				MC::VoxelColor voxel_color;
 
 				if (biome == OCEAN) {
@@ -129,9 +128,7 @@ void GenerateWorld(MC::Application& app) {
 					}
 				}
 
-				// Create the voxel
 				MC::Voxel voxel(voxel_color, MC::Transform(glm::vec3(x, y, z)));
-				// Insert the voxel into the scene
 				scene.InsertVoxel(voxel);
 			}
 		}
@@ -380,5 +377,6 @@ i32 main() {
 		.AddEventFunction<MC::KeyPressedEvent, MC::KeyHeldEvent>(MoveCameraOnKeyPress)
 		.AddEventFunction<MC::MouseMovedEvent>(RotateCameraOnMouseMove)
 		.AddEventFunction<MC::MouseScrolledEvent>(ZoomCamera)
+		.AddEventFunction<MC::KeyPressedEvent>(ExpandCamera)
 		.Start();
 }

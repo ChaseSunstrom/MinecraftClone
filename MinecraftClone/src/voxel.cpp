@@ -128,9 +128,6 @@ namespace MC {
 		return m_transform;
 	}
 	
-	NeighboringFaces Voxel::GetNeighboringFaces() const {
-		return m_neighboring_faces;
-	}
 
 	void Voxel::SetVoxelColor(VoxelColor color) {
 		m_voxel_color = color;
@@ -145,9 +142,6 @@ namespace MC {
 		m_transform = transform;
 	}
 	
-	void Voxel::SetNeighboringFaces(NeighboringFaces neighboring_faces) {
-		m_neighboring_faces = neighboring_faces;
-	}
 
 	void Voxel::Move(const glm::vec3& pos) {
 		m_transform.Move(pos);

@@ -1,8 +1,8 @@
 #include "camera.hpp"
 
 namespace MC {
-    Camera::Camera(f32 aspect_ratio, glm::vec3 position, glm::vec3 up, f32 yaw, f32 pitch, f32 fov, f32 movement_speed, f32 mouse_sensitivity)
-        : m_aspect_ratio(aspect_ratio), m_position(position), m_world_up(up), m_yaw(yaw), m_pitch(pitch), m_fov(fov),
+    Camera::Camera(f32 aspect_ratio, glm::vec3 position, glm::vec3 up, f32 yaw, f32 pitch, f32 fov, f32 far, f32 near, f32 movement_speed, f32 mouse_sensitivity)
+        : m_aspect_ratio(aspect_ratio), m_position(position), m_world_up(up), m_yaw(yaw), m_pitch(pitch), m_fov(fov), m_far(far), m_near(near),
         m_movement_speed(movement_speed), m_mouse_sensitivity(mouse_sensitivity) {
         UpdateCameraVectors();
     }
@@ -12,7 +12,19 @@ namespace MC {
     }
 
     glm::mat4 Camera::GetProjectionMatrix() const {
-        return glm::perspective(glm::radians(m_fov), m_aspect_ratio, 0.1f, 100.0f);
+        return glm::perspective(glm::radians(m_fov), m_aspect_ratio, m_near, m_far);
+    }
+
+    void Camera::SetFar(f32 far) {
+        m_far = far;
+    }
+
+    void Camera::IncreaseFar(f32 amount) {
+        m_far += amount;
+    }
+
+    void Camera::DecreaseFar(f32 amount) {
+        m_far -= amount;
     }
 
     void Camera::OnWindowResize(EventPtr<WindowResizedEvent> event) {
