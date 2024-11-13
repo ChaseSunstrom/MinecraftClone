@@ -37,6 +37,7 @@ namespace MC {
 		LIGHT_GREEN,
 		DARK_RED
 	};
+
 	glm::vec4 VoxelColorToColor(VoxelColor color);
 
 	// Since we are only using Voxels (for now atleast) we will just store the VAO, VBO, EBO, statically

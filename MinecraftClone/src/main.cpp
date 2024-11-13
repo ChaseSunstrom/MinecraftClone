@@ -18,6 +18,13 @@ void AddVoxels(MC::Application& app) {
 	}
 }
 
+static MC::VoxelColor color = MC::VoxelColor::GREEN;
+
+void SwitchColor(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event) {
+	if (event->key >= GLFW_KEY_0 && event->key <= GLFW_KEY_9) {
+		color = (MC::VoxelColor)(event->key % 9);
+	}
+}
 
 void PlaceVoxel(MC::Application& app, MC::EventPtr<MC::MouseButtonPressedEvent> event) {
 	if (event->button == GLFW_MOUSE_BUTTON_RIGHT) {
@@ -80,7 +87,7 @@ void PlaceVoxel(MC::Application& app, MC::EventPtr<MC::MouseButtonPressedEvent> 
 			auto existing_voxel = scene.GetVoxelAtPosition(grid_pos);
 			if (!existing_voxel.has_value()) {
 				// Insert the new voxel
-				MC::Voxel new_voxel(MC::VoxelColor::GREEN, MC::Transform(new_voxel_pos));
+				MC::Voxel new_voxel(color, MC::Transform(new_voxel_pos));
 				scene.InsertVoxel(new_voxel);
 				std::cout << "Placed Voxel at ("
 					<< new_voxel_pos.x << ", "
@@ -234,6 +241,7 @@ i32 main() {
 		.AddUpdateFunction([&fps_counter](MC::Application& app) {
 				fps_counter.Update();
 			})
+		.AddEventFunction<MC::KeyPressedEvent>(SwitchColor)
 		.AddEventFunction<MC::KeyPressedEvent>(EscapeFunction)
 		.AddEventFunction<MC::MouseButtonPressedEvent>([&](MC::Application& app, MC::EventPtr<MC::MouseButtonPressedEvent> event) {
 					if (event->button == GLFW_MOUSE_BUTTON_RIGHT) {
