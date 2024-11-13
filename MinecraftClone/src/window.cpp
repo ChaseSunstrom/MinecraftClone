@@ -95,6 +95,9 @@ namespace MC {
 		glewInit();
 
 		glEnable(GL_DEPTH_TEST); 
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
+		glFrontFace(GL_CCW);
 		glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); 
 	}
 

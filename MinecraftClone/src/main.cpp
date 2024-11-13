@@ -2,6 +2,7 @@
 #include "fps.hpp"
 
 #include <GLM/gtc/noise.hpp>
+#include <random>
 
 
 void EscapeFunction(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event) {
@@ -22,118 +23,135 @@ void ExpandCamera(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event)
 
 void GenerateWorld(MC::Application& app) {
 	MC::Scene& scene = app.GetScene();
-	
-	const i32 world_width = 250;
-	const i32 world_depth = 250;
-	const f32 scale = 0.1f;
-	const i32 max_height = 10; 
 
+	const i32 world_width = 500;
+	const i32 world_depth = 500;
+	const f32 scale = 0.1f;
+	const i32 max_height = 20;
 	const f32 biome_scale = 0.01f;
 
-	for (i32 x = 0; x < world_width; ++x) {
-		for (i32 z = 0; z < world_depth; ++z) {
-			f32 noise_value = glm::perlin(glm::vec2(x * scale, z * scale));
-			noise_value = (noise_value + 1.0f) / 2.0f;
-			i32 height = static_cast<i32>(noise_value * max_height);
+	// Random seed for noise offset
+	u32 seed = static_cast<u32>(std::chrono::system_clock::now().time_since_epoch().count());
+	std::mt19937 rng(seed);
+	std::uniform_real_distribution<f32> dist(-10000.0f, 10000.0f);
+	f32 x_offset = dist(rng);
+	f32 z_offset = dist(rng);
 
-			f32 biome_noise = glm::perlin(glm::vec2(x * biome_scale, z * biome_scale));
-			biome_noise = (biome_noise + 1.0f) / 2.0f;
+	// Determine the number of threads
+	u32 num_threads = std::thread::hardware_concurrency();
+	if (num_threads == 0) num_threads = 4; // Default to 4 if not available
 
-			enum BiomeType {
-				DESERT,
-				PLAINS,
-				FOREST,
-				SNOWY,
-				MOUNTAINS,
-				OCEAN
-			};
+	std::vector<std::thread> threads;
+	std::vector<std::vector<MC::Voxel>> voxel_batches(num_threads);
 
-			BiomeType biome;
-			if (biome_noise < 0.2f) {
-				biome = DESERT;
-			}
-			else if (biome_noise < 0.4f) {
-				biome = PLAINS;
-			}
-			else if (biome_noise < 0.6f) {
-				biome = OCEAN;
-			}
-			else if (biome_noise < 0.8f) {
-				biome = SNOWY;
-			}
-			else {
-				biome = MOUNTAINS;
-			}
+	for (u32 t = 0; t < num_threads; ++t) {
+		threads.emplace_back([&, t]() {
+			// Each thread handles a range of x values
+			i32 x_start = t * world_width / num_threads;
+			i32 x_end = (t + 1) * world_width / num_threads;
 
-			if (biome == OCEAN) {
-				height = 3;
-			}
-			else if (biome == MOUNTAINS) {
-				height += 10;
-			}
-			else if (biome == DESERT) {
-				height -= 2;
-			}
+			std::vector<MC::Voxel>& voxels = voxel_batches[t];
 
-			if (height < 1) height = 1;
-			if (height > max_height) height = max_height;
+			for (i32 x = x_start; x < x_end; ++x) {
+				for (i32 z = 0; z < world_depth; ++z) {
+					// Apply random offsets to make the world different each time
+					f32 noise_value = glm::perlin(glm::vec2((x + x_offset) * scale, (z + z_offset) * scale));
+					noise_value = (noise_value + 1.0f) / 2.0f;
+					i32 height = static_cast<i32>(noise_value * max_height);
 
-			for (i32 y = 0; y <= height; ++y) {
-				MC::VoxelColor voxel_color;
+					f32 biome_noise = glm::perlin(glm::vec2((x + x_offset) * biome_scale, (z + z_offset) * biome_scale));
+					biome_noise = (biome_noise + 1.0f) / 2.0f;
 
-				if (biome == OCEAN) {
-					voxel_color = MC::VoxelColor::BLUE; // Water
-				}
-				else if (biome == DESERT) {
-					if (y == height) {
-						voxel_color = MC::VoxelColor::YELLOW; // Sand
+					enum BiomeType {
+						DESERT,
+						PLAINS,
+						FOREST,
+						SNOWY,
+						MOUNTAINS,
+						OCEAN
+					};
+
+					BiomeType biome;
+					if (biome_noise < 0.2f) {
+						biome = DESERT;
+					}
+					else if (biome_noise < 0.4f) {
+						biome = PLAINS;
+					}
+					else if (biome_noise < 0.6f) {
+						biome = OCEAN;
+					}
+					else if (biome_noise < 0.8f) {
+						biome = SNOWY;
 					}
 					else {
-						voxel_color = MC::VoxelColor::BROWN; // Dirt
+						biome = MOUNTAINS;
 					}
-				}
-				else if (biome == PLAINS) {
-					if (y == height) {
-						voxel_color = MC::VoxelColor::GREEN; // Grass
-					}
-					else {
-						voxel_color = MC::VoxelColor::BROWN; // Dirt
-					}
-				}
-				else if (biome == FOREST) {
-					if (y == height) {
-						voxel_color = MC::VoxelColor::GREEN; // Grass
-					}
-					else {
-						voxel_color = MC::VoxelColor::BROWN; // Dirt
-					}
-				}
-				else if (biome == SNOWY) {
-					if (y == height) {
-						voxel_color = MC::VoxelColor::WHITE; // Snow
-					}
-					else {
-						voxel_color = MC::VoxelColor::GRAY; // Stone
-					}
-				}
-				else if (biome == MOUNTAINS) {
-					if (y >= height - 2) {
-						voxel_color = MC::VoxelColor::WHITE; // Snow
-					}
-					else if (y >= height - 5) {
-						voxel_color = MC::VoxelColor::GRAY; // Stone
-					}
-					else {
-						voxel_color = MC::VoxelColor::BROWN; // Dirt
-					}
-				}
 
-				MC::Voxel voxel(voxel_color, MC::Transform(glm::vec3(x, y, z)));
-				scene.InsertVoxel(voxel);
+					// Adjust height based on biome
+					if (biome == OCEAN) {
+						height = 3;
+					}
+					else if (biome == MOUNTAINS) {
+						height *= 2;
+					}
+					else if (biome == DESERT || biome == PLAINS) {
+						height /= 2;
+					}
+
+					height = std::clamp(height, 1, max_height);
+
+					// Generate voxels for the column
+					for (i32 y = 0; y <= height; ++y) {
+						MC::VoxelColor voxel_color;
+
+						if (biome == OCEAN) {
+							voxel_color = MC::VoxelColor::BLUE; // Water
+						}
+						else if (biome == DESERT) {
+							voxel_color = MC::VoxelColor::YELLOW;
+						}
+						else if (biome == PLAINS || biome == FOREST) {
+							voxel_color = (y == height) ? MC::VoxelColor::GREEN : MC::VoxelColor::BROWN; // Grass or Dirt
+						}
+						else if (biome == SNOWY) {
+							voxel_color = (y == height) ? MC::VoxelColor::WHITE : MC::VoxelColor::GRAY; // Snow or Stone
+						}
+						else if (biome == MOUNTAINS) {
+							if (y >= height - 2) {
+								voxel_color = MC::VoxelColor::WHITE; // Snow
+							}
+							else if (y >= height - 5) {
+								voxel_color = MC::VoxelColor::GRAY; // Stone
+							}
+							else {
+								voxel_color = MC::VoxelColor::BROWN; // Dirt
+							}
+						}
+
+						MC::Voxel voxel(voxel_color, MC::Transform(glm::vec3(x, y, z)));
+						voxels.push_back(voxel);
+					}
+				}
 			}
-		}
+			});
 	}
+
+	// Wait for all threads to finish
+	for (auto& thread : threads) {
+		thread.join();
+	}
+
+	// Collect all voxels and insert them into the scene
+	std::vector<MC::Voxel> all_voxels;
+	for (auto& batch : voxel_batches) {
+		all_voxels.insert(all_voxels.end(), batch.begin(), batch.end());
+	}
+
+	// Insert all voxels into the scene using the bulk insertion method
+	scene.InsertVoxels(all_voxels);
 }
+
 
 
 void ZoomCamera(MC::Application& app, MC::EventPtr<MC::MouseScrolledEvent> event) {

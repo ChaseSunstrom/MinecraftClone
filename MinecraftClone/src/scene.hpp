@@ -20,6 +20,7 @@ namespace MC {
         ~Scene();
 
         void InsertVoxel(const Voxel& voxel);
+        void InsertVoxels(const std::vector<Voxel>& voxels);
         void RemoveVoxel(u32 voxel_id);
         void UpdateVoxel(const Voxel& updated_voxel);
         void InitializeScene();
@@ -36,6 +37,7 @@ namespace MC {
 
         std::optional<Voxel> GetVoxelAtPosition(const glm::ivec3& grid_pos) const;
         std::optional<VoxelHitInfo> GetVoxelLookedAt(f32 max_distance = 100.0f) const;
+
 
     private:
         std::unordered_map<VoxelColor, std::vector<Transform>> m_voxel_transforms;

@@ -43,6 +43,7 @@ namespace MC {
 			NEG_Z
 		};
 
+		Voxel() : m_id(s_next_id++), m_voxel_color(VoxelColor::BLACK), visible_faces(0x3F), m_color(VoxelColorToColor(m_voxel_color)) {}
 
 		Voxel(VoxelColor color, const Transform& transform)
 			: m_id(s_next_id++), m_voxel_color(color), m_transform(transform), m_color(VoxelColorToColor(color)), visible_faces(0x3F) {}
