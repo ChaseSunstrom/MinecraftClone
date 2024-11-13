@@ -11,12 +11,26 @@
 namespace MC {
 	enum class VoxelType {
 		AIR,
-		GRASS,
+		GRASS_PLAINS,
+		GRASS_FOREST,
+		GRASS_JUNGLE,
+		GRASS_SAVANNA,
+		GRASS_TAIGA,
 		DIRT,
 		STONE,
 		SAND,
 		WOOD,
 		LEAVES,
+		WATER,
+		ICE,
+		SNOW,
+		LAVA,
+		COAL_ORE,
+		IRON_ORE,
+		GOLD_ORE,
+		DIAMOND_ORE,
+		GRAVEL,
+		BEDROCK
 	};
 
 	// Function to map VoxelType to color

@@ -14,8 +14,16 @@ namespace MC {
     // Function to map VoxelType to color
     glm::vec4 VoxelTypeToColor(VoxelType type) {
         switch (type) {
-        case VoxelType::GRASS:
-            return { 0.0f, 1.0f, 0.0f, 1.0f }; // Green
+        case VoxelType::GRASS_PLAINS:
+            return { 0.0f, 0.8f, 0.0f, 1.0f }; // Bright green
+        case VoxelType::GRASS_FOREST:
+            return { 0.0f, 0.6f, 0.0f, 1.0f }; // Darker green
+        case VoxelType::GRASS_JUNGLE:
+            return { 0.0f, 0.9f, 0.2f, 1.0f }; // Lush green
+        case VoxelType::GRASS_SAVANNA:
+            return { 0.5f, 0.8f, 0.0f, 1.0f }; // Yellowish green
+        case VoxelType::GRASS_TAIGA:
+            return { 0.0f, 0.7f, 0.5f, 1.0f }; // Blueish green
         case VoxelType::DIRT:
             return { 0.55f, 0.27f, 0.07f, 1.0f }; // Brown
         case VoxelType::STONE:
@@ -26,11 +34,32 @@ namespace MC {
             return { 0.65f, 0.50f, 0.39f, 1.0f }; // Wood color
         case VoxelType::LEAVES:
             return { 0.13f, 0.55f, 0.13f, 1.0f }; // Dark green
+        case VoxelType::WATER:
+            return { 0.0f, 0.0f, 1.0f, 0.7f }; // Blue with transparency
+        case VoxelType::ICE:
+            return { 0.7f, 0.9f, 1.0f, 0.8f }; // Light blue with transparency
+        case VoxelType::SNOW:
+            return { 1.0f, 1.0f, 1.0f, 1.0f }; // White
+        case VoxelType::LAVA:
+            return { 1.0f, 0.5f, 0.0f, 1.0f }; // Orange
+        case VoxelType::COAL_ORE:
+            return { 0.2f, 0.2f, 0.2f, 1.0f }; // Dark gray
+        case VoxelType::IRON_ORE:
+            return { 0.8f, 0.5f, 0.2f, 1.0f }; // Rusty color
+        case VoxelType::GOLD_ORE:
+            return { 1.0f, 0.84f, 0.0f, 1.0f }; // Gold color
+        case VoxelType::DIAMOND_ORE:
+            return { 0.0f, 1.0f, 1.0f, 1.0f }; // Cyan
+        case VoxelType::GRAVEL:
+            return { 0.6f, 0.6f, 0.6f, 1.0f }; // Light gray
+        case VoxelType::BEDROCK:
+            return { 0.1f, 0.1f, 0.1f, 1.0f }; // Almost black
         case VoxelType::AIR:
         default:
             return { 0.0f, 0.0f, 0.0f, 0.0f }; // Transparent
         }
     }
+
 
     // Constructors
     Voxel::Voxel()

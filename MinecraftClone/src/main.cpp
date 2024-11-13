@@ -26,7 +26,7 @@ void ZoomCamera(MC::Application& app, MC::EventPtr<MC::MouseScrolledEvent> event
 	camera.SetFOV(camera.GetFOV() - event->y);
 }
 
-static MC::VoxelType color = MC::VoxelType::GRASS;
+static MC::VoxelType color = MC::VoxelType::DIRT;
 
 void SwitchColor(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event) {
 	if (event->key >= GLFW_KEY_0 && event->key <= GLFW_KEY_9) {

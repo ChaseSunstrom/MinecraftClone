@@ -22,7 +22,13 @@ namespace MC {
         MOUNTAINS,
         FOREST,
         SWAMP,
+        JUNGLE,
+        SAVANNA,
+        TAIGA,
+        SNOWY_MOUNTAINS,
+        OCEAN
     };
+
 
 
     class Scene {
@@ -64,6 +70,7 @@ namespace MC {
         void GenerateVoxelDataForChunk(Chunk& chunk);
         void GenerateTrees(Chunk& chunk, i32 world_x, i32 world_z, i32 terrain_height, BiomeType biome);
         BiomeType GetBiomeType(i32 world_x, i32 world_z);
+        f32 ComputeElevationNoise(f32 x, f32 z);
         i32 GetTerrainHeight(i32 world_x, i32 world_z, BiomeType biome);
         VoxelType GetVoxelType(i32 world_x, i32 world_y, i32 world_z, i32 terrain_height, BiomeType biome);
         bool IsCave(i32 world_x, i32 world_y, i32 world_z);
@@ -85,6 +92,8 @@ namespace MC {
 
         // Thread pool for chunk generation
         ThreadPool& m_thread_pool;
+
+        u32 m_seed;
     };
 }
 
