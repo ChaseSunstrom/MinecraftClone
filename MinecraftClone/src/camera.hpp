@@ -6,6 +6,7 @@
 
 #include "types.hpp"
 #include "event.hpp"
+#include "frustum.hpp"
 
 namespace MC {
 
@@ -41,6 +42,8 @@ namespace MC {
         glm::vec3 GetRight() const { return m_right; }
         glm::vec3 GetWorldUp() const { return m_world_up; }
 
+        Frustum& GetFrustum() { return m_frustum; }
+
         void SetAspectRatio(f32 aspect_ratio);
         void SetFOV(f32 fov);
 
@@ -73,6 +76,8 @@ namespace MC {
         f32 m_aspect_ratio;
         f32 m_far;
         f32 m_near;
+
+        Frustum m_frustum;
     };
 }
 

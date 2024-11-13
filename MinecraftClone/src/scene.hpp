@@ -1,8 +1,7 @@
-// Scene.hpp
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
-#include "voxel.hpp"
+#include "chunk.hpp"
 #include "camera.hpp"
 #include "event_handler.hpp"
 #include <unordered_map>
@@ -27,31 +26,33 @@ namespace MC {
 
         void SetSkyColor(const glm::vec4& sky_color);
 
-        const std::unordered_map<VoxelColor, std::vector<Transform>>& GetVoxelTransforms() const;
-        const std::unordered_map<VoxelColor, std::vector<glm::mat4>>& GetVoxelMatrices() const;
-        const std::unordered_map<u32, Voxel>& GetVoxels() const;
-        std::optional<Voxel> GetVoxel(u32 id) const;
-
+        // Accessors
         Camera& GetCamera() const;
         glm::vec4 GetSkyColor() const;
 
-        std::optional<Voxel> GetVoxelAtPosition(const glm::ivec3& grid_pos) const;
+        // Get all chunks
+        std::unordered_map<glm::ivec3, Chunk>& GetChunks();
+
+        // Voxel retrieval
+        std::optional<Voxel> GetVoxel(u32 id) const;
+        std::optional<Voxel> GetVoxelAtPosition(const glm::ivec3& world_pos) const;
+
+        // Raycasting
         std::optional<VoxelHitInfo> GetVoxelLookedAt(f32 max_distance = 100.0f) const;
 
-
     private:
-        std::unordered_map<VoxelColor, std::vector<Transform>> m_voxel_transforms;
-        std::unordered_map<VoxelColor, std::vector<glm::mat4>> m_voxel_matrices;
-        std::unordered_map<u32, Voxel> m_voxels;
+        // Chunks stored by their positions in chunk coordinates
+        std::unordered_map<glm::ivec3, Chunk> m_chunks;
 
-        std::unordered_map<glm::ivec3, u32> m_position_to_id;
+        // Map of voxel IDs to their chunk positions and local positions
+        std::unordered_map<u32, std::pair<glm::ivec3, glm::ivec3>> m_voxelLocations;
 
         std::unique_ptr<Camera> m_camera;
         glm::vec4 m_sky_color;
 
         EventHandler& m_event_handler;
 
-        mutable std::mutex m_voxel_mutex; // Mutex for thread safety
+        mutable std::mutex m_chunk_mutex; // Mutex for thread safety
     };
 }
 

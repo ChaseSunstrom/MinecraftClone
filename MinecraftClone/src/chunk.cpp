@@ -1,5 +1,8 @@
 #include "chunk.hpp"
 
+#include <GL/glew.h>
+#include "scene.hpp"
+
 namespace MC {
     Chunk::Chunk(const glm::ivec3& position)
         : m_position(position), m_needs_mesh_update(true) {
@@ -18,10 +21,15 @@ namespace MC {
             return;
         }
 
+
         u32 voxel_id = voxel.GetID();
         m_voxels[voxel_id] = voxel;
         m_voxel_ids[local_pos.x][local_pos.y][local_pos.z] = voxel_id;
         m_needs_mesh_update = true;
+
+        Voxel voxel_copy = voxel;
+        voxel_copy.SetLocalPosition(local_pos);
+        m_voxels[voxel_id] = voxel_copy;
     }
 
     std::optional<Voxel> Chunk::GetVoxel(const glm::ivec3& local_pos) const {
@@ -31,10 +39,10 @@ namespace MC {
             return std::nullopt;
         }
 
-        auto voxelIdOpt = m_voxel_ids[local_pos.x][local_pos.y][local_pos.z];
-        if (voxelIdOpt.has_value()) {
-            u32 voxelId = voxelIdOpt.value();
-            auto it = m_voxels.find(voxelId);
+        auto voxel_id_opt  = m_voxel_ids[local_pos.x][local_pos.y][local_pos.z];
+        if (voxel_id_opt .has_value()) {
+            u32 voxel_id = voxel_id_opt .value();
+            auto it = m_voxels.find(voxel_id);
             if (it != m_voxels.end()) {
                 return it->second;
             }
@@ -74,9 +82,102 @@ namespace MC {
         m_needs_mesh_update = needsUpdate;
     }
 
-    void Chunk::UpdateMesh() {
-        // Implement mesh update logic here
-        // This will generate the mesh data for rendering
+    void Chunk::UpdateMesh(const Scene& scene) {
+        m_vertices.clear();
+        m_indices.clear();
+        GLuint index_offset = 0;
+
+        // Directions and corresponding face normals
+        static const glm::ivec3 directions[6] = {
+            {1, 0, 0},  // POS_X
+            {-1, 0, 0}, // NEG_X
+            {0, 1, 0},  // POS_Y
+            {0, -1, 0}, // NEG_Y
+            {0, 0, 1},  // POS_Z
+            {0, 0, -1}  // NEG_Z
+        };
+
+        static const glm::vec3 faceNormals[6] = {
+            {1, 0, 0},   // POS_X
+            {-1, 0, 0},  // NEG_X
+            {0, 1, 0},   // POS_Y
+            {0, -1, 0},  // NEG_Y
+            {0, 0, 1},   // POS_Z
+            {0, 0, -1}   // NEG_Z
+        };
+
+        for (auto& [voxel_id, voxel] : m_voxels) {
+            glm::ivec3 local_pos = voxel.GetLocalPosition();
+            glm::vec3 worldPos = glm::vec3(local_pos);
+
+            // For each face
+            for (int i = 0; i < 6; ++i) {
+                glm::ivec3 neighbor_pos = local_pos + directions[i];
+
+                // Check if neighbor voxel exists
+                std::optional<Voxel> neighbor_voxel;
+                if (neighbor_pos.x >= 0 && neighbor_pos.x < CHUNK_SIZE &&
+                    neighbor_pos.y >= 0 && neighbor_pos.y < CHUNK_SIZE &&
+                    neighbor_pos.z >= 0 && neighbor_pos.z < CHUNK_SIZE) {
+                    neighbor_voxel = GetVoxel(neighbor_pos);
+                }
+                else {
+                    // Neighbor might be in adjacent chunk
+                    neighbor_voxel = scene.GetVoxelAtPosition(worldPos + glm::vec3(directions[i]));
+                }
+
+                if (!neighbor_voxel.has_value()) {
+                    // Neighbor voxel does not exist, so this face is visible
+                    // Create face vertices and indices
+                    Vertex face_vertices[4];
+                    for (i32 j = 0; j < 4; ++j) {
+                        face_vertices[j].pos = VOXEL_FACE_VERTICES[i][j] + worldPos;
+                        face_vertices[j].normal = faceNormals[i];
+                        face_vertices[j].color = voxel.GetColor();
+                    }
+
+                    m_vertices.insert(m_vertices.end(), face_vertices, face_vertices + 4);
+
+                    m_indices.push_back(index_offset + 0);
+                    m_indices.push_back(index_offset + 1);
+                    m_indices.push_back(index_offset + 2);
+                    m_indices.push_back(index_offset + 2);
+                    m_indices.push_back(index_offset + 3);
+                    m_indices.push_back(index_offset + 0);
+
+                    index_offset += 4;
+                }
+            }
+        }
+
+        // Generate or update VBOs
+        if (m_vao == 0) {
+            glGenVertexArrays(1, &m_vao);
+            glGenBuffers(1, &m_vbo);
+            glGenBuffers(1, &m_ebo);
+        }
+
+        glBindVertexArray(m_vao);
+
+        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+        glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(Vertex), m_vertices.data(), GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(GLuint), m_indices.data(), GL_STATIC_DRAW);
+
+        // Vertex attributes
+        glEnableVertexAttribArray(0); // Position
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, pos));
+
+        glEnableVertexAttribArray(1); // Normal
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+        glEnableVertexAttribArray(2); // Color attribute
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+
+        glBindVertexArray(0);
+
         m_needs_mesh_update = false;
     }
+
 }

@@ -43,10 +43,10 @@ namespace MC {
 			NEG_Z
 		};
 
-		Voxel() : m_id(s_next_id++), m_voxel_color(VoxelColor::BLACK), visible_faces(0x3F), m_color(VoxelColorToColor(m_voxel_color)) {}
+		Voxel() : m_id(s_next_id++), m_voxel_color(VoxelColor::BLACK), visible_faces(0x3F), m_color(VoxelColorToColor(m_voxel_color)), m_local_position(0) {}
 
 		Voxel(VoxelColor color, const Transform& transform)
-			: m_id(s_next_id++), m_voxel_color(color), m_transform(transform), m_color(VoxelColorToColor(color)), visible_faces(0x3F) {}
+			: m_id(s_next_id++), m_voxel_color(color), m_transform(transform), m_color(VoxelColorToColor(color)), visible_faces(0x3F), m_local_position(0) {}
 
 		bool IsFaceVisible(FaceIndex face) const {
 			return (visible_faces & (1 << face)) != 0;
@@ -85,12 +85,21 @@ namespace MC {
 		static u32 GetVao();
 		static u32 GetVbo();
 		static u32 GetEbo();
+
+		void SetLocalPosition(const glm::ivec3& local_pos) {
+			m_local_position = local_pos;
+		}
+
+		glm::ivec3 GetLocalPosition() const {
+			return m_local_position;
+		}
 	public:
 		uint8_t visible_faces;
 	private:
 		Transform m_transform;
 		// Color for now, textures will be implemented later
 		VoxelColor m_voxel_color;
+		glm::ivec3 m_local_position;
 		glm::vec4 m_color;
 		static u32 s_vao;
 		static u32 s_vbo;
@@ -137,6 +146,21 @@ namespace MC {
 		{{ 0.5f, -0.5f,  0.5f}, {0.0f, -1.0f, 0.0f}}, // 21
 		{{ 0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}}, // 22
 		{{-0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}}, // 23
+	};
+
+	constexpr glm::vec3 VOXEL_FACE_VERTICES[6][4] = {
+		// POS_X Face
+		{{1, 0, 0}, {1, 1, 0}, {1, 1, 1}, {1, 0, 1}},
+		// NEG_X Face
+		{{0, 0, 1}, {0, 1, 1}, {0, 1, 0}, {0, 0, 0}},
+		// POS_Y Face
+		{{0, 1, 1}, {1, 1, 1}, {1, 1, 0}, {0, 1, 0}},
+		// NEG_Y Face
+		{{0, 0, 0}, {1, 0, 0}, {1, 0, 1}, {0, 0, 1}},
+		// POS_Z Face
+		{{0, 0, 1}, {1, 0, 1}, {1, 1, 1}, {0, 1, 1}},
+		// NEG_Z Face
+		{{0, 1, 0}, {1, 1, 0}, {1, 0, 0}, {0, 0, 0}}
 	};
 
 	constexpr u16 VOXEL_INDICES[] = {

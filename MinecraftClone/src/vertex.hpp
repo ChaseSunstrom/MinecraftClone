@@ -7,6 +7,7 @@ namespace MC {
 	struct Vertex {
 		glm::vec3 pos;
 		glm::vec3 normal;
+		glm::vec4 color;
 	};
 }
 
