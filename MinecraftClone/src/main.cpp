@@ -1,6 +1,8 @@
 #include "application.hpp"
 #include "fps.hpp"
 
+#include <GLM/gtc/noise.hpp>
+
 
 void EscapeFunction(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event) {
 	if (event->key == GLFW_KEY_ESCAPE) {
@@ -8,20 +10,138 @@ void EscapeFunction(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> even
 	}
 }
 
-void AddVoxels(MC::Application& app) {
-	for (i32 i = 0; i < 50; i++) {
-		for (i32 j = 0; j < 50; j++) {
-			MC::Voxel voxel((MC::VoxelColor)(i % (i32)MC::VoxelColor::DARK_RED), MC::Transform(glm::vec3(i, 0.0f, j)));
-			MC::Scene& scene = app.GetScene();
-			scene.InsertVoxel(voxel);
+void GenerateWorld(MC::Application& app) {
+	MC::Scene& scene = app.GetScene();
+
+	// Parameters for world generation
+	const i32 world_width = 100;
+	const i32 world_depth = 100;
+	const f32 scale = 0.1f; // Scale of the noise
+	const i32 max_height = 20; // Maximum height of terrain
+
+	// Parameters for biome generation
+	const f32 biome_scale = 0.01f; // Larger scale for biomes
+
+	for (i32 x = 0; x < world_width; ++x) {
+		for (i32 z = 0; z < world_depth; ++z) {
+			// Generate height using Perlin noise
+			f32 noise_value = glm::perlin(glm::vec2(x * scale, z * scale));
+			// Map noiseValue from [-1,1] to [0,1]
+			noise_value = (noise_value + 1.0f) / 2.0f;
+			// Compute height
+			i32 height = static_cast<i32>(noise_value * max_height);
+
+			// Generate biome using another layer of Perlin noise
+			f32 biome_noise = glm::perlin(glm::vec2(x * biome_scale, z * biome_scale));
+			// Map biomeNoise from [-1,1] to [0,1]
+			biome_noise = (biome_noise + 1.0f) / 2.0f;
+
+			// Determine biome based on biomeNoise
+			enum BiomeType {
+				DESERT,
+				PLAINS,
+				FOREST,
+				SNOWY,
+				MOUNTAINS,
+				OCEAN
+			};
+			BiomeType biome;
+			if (biome_noise < 0.2f) {
+				biome = DESERT;
+			}
+			else if (biome_noise < 0.4f) {
+				biome = PLAINS;
+			}
+			else if (biome_noise < 0.6f) {
+				biome = FOREST;
+			}
+			else if (biome_noise < 0.8f) {
+				biome = SNOWY;
+			}
+			else {
+				biome = MOUNTAINS;
+			}
+
+			// Adjust height based on biome
+			if (biome == OCEAN) {
+				height = 3; // Low height for ocean
+			}
+			else if (biome == MOUNTAINS) {
+				height += 10; // Increase height for mountains
+			}
+			else if (biome == DESERT) {
+				height -= 2; // Slightly lower for desert
+			}
+
+			// Clamp height
+			if (height < 1) height = 1;
+			if (height > max_height) height = max_height;
+
+			// For each y from 0 up to height, create a voxel
+			for (i32 y = 0; y <= height; ++y) {
+				// Determine voxel color based on height and biome
+				MC::VoxelColor voxel_color;
+
+				if (biome == OCEAN) {
+					voxel_color = MC::VoxelColor::BLUE; // Water
+				}
+				else if (biome == DESERT) {
+					if (y == height) {
+						voxel_color = MC::VoxelColor::YELLOW; // Sand
+					}
+					else {
+						voxel_color = MC::VoxelColor::BROWN; // Dirt
+					}
+				}
+				else if (biome == PLAINS) {
+					if (y == height) {
+						voxel_color = MC::VoxelColor::GREEN; // Grass
+					}
+					else {
+						voxel_color = MC::VoxelColor::BROWN; // Dirt
+					}
+				}
+				else if (biome == FOREST) {
+					if (y == height) {
+						voxel_color = MC::VoxelColor::GREEN; // Grass
+					}
+					else {
+						voxel_color = MC::VoxelColor::BROWN; // Dirt
+					}
+				}
+				else if (biome == SNOWY) {
+					if (y == height) {
+						voxel_color = MC::VoxelColor::WHITE; // Snow
+					}
+					else {
+						voxel_color = MC::VoxelColor::GRAY; // Stone
+					}
+				}
+				else if (biome == MOUNTAINS) {
+					if (y >= height - 2) {
+						voxel_color = MC::VoxelColor::WHITE; // Snow
+					}
+					else if (y >= height - 5) {
+						voxel_color = MC::VoxelColor::GRAY; // Stone
+					}
+					else {
+						voxel_color = MC::VoxelColor::BROWN; // Dirt
+					}
+				}
+
+				// Create the voxel
+				MC::Voxel voxel(voxel_color, MC::Transform(glm::vec3(x, y, z)));
+				// Insert the voxel into the scene
+				scene.InsertVoxel(voxel);
+			}
 		}
 	}
 }
 
+
 void ZoomCamera(MC::Application& app, MC::EventPtr<MC::MouseScrolledEvent> event) {
 	MC::Camera& camera = app.GetScene().GetCamera();
-
-	camera.SetFOV(camera.GetFOV() + event->y);
+	camera.SetFOV(camera.GetFOV() - event->y);
 }
 
 static MC::VoxelColor color = MC::VoxelColor::GREEN;
@@ -240,7 +360,7 @@ i32 main() {
 		.AddStartupFunction([](MC::Application& app) {
 				LOG_INFO("Application initialized!");
 			})
-		.AddStartupFunction(AddVoxels)
+		.AddStartupFunction(GenerateWorld)
 		.AddShutdownFunction([](MC::Application& app) {
 				LOG_INFO("Application shut down!");
 			})
