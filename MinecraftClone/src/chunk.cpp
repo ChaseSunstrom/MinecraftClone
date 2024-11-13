@@ -30,7 +30,6 @@ namespace MC {
         m_voxels[voxel_id] = voxel_copy;
     }
 
-
     std::optional<Voxel> Chunk::GetVoxel(const glm::ivec3& local_pos) const {
         if (local_pos.x < 0 || local_pos.x >= CHUNK_SIZE ||
             local_pos.y < 0 || local_pos.y >= CHUNK_SIZE ||
@@ -48,7 +47,6 @@ namespace MC {
         }
         return std::nullopt;
     }
-
 
     void Chunk::RemoveVoxel(const glm::ivec3& local_pos) {
         if (local_pos.x < 0 || local_pos.x >= CHUNK_SIZE ||

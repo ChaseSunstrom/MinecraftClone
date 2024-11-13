@@ -71,6 +71,7 @@ namespace MC {
         void GenerateTrees(Chunk& chunk, i32 world_x, i32 world_z, i32 terrain_height, BiomeType biome);
         BiomeType GetBiomeType(i32 world_x, i32 world_z);
         f32 ComputeElevationNoise(f32 x, f32 z);
+        i32 GetBiomeElevation(f32 elevation, BiomeType biome);
         i32 GetTerrainHeight(i32 world_x, i32 world_z, BiomeType biome);
         VoxelType GetVoxelType(i32 world_x, i32 world_y, i32 world_z, i32 terrain_height, BiomeType biome);
         bool IsCave(i32 world_x, i32 world_y, i32 world_z);

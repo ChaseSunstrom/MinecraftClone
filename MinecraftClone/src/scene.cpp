@@ -10,8 +10,8 @@ namespace MC {
     // Constants for world generation
     const i32 CHUNK_LOAD_RADIUS = 32;
     const i32 CHUNK_LOAD_HEIGHT = 8;
-    const f32 BIOME_SCALE = 0.0001f;
-    const f32 ELEVATION_SCALE = 0.01f;
+    const f32 BIOME_SCALE = 0.003f; // Larger scale for smaller biomes
+    const f32 ELEVATION_SCALE = 0.05f; // Smaller scale for smoother terrain
     const f32 CAVE_SCALE = 0.05f;
     const f32 TREE_SCALE = 0.03f;
     const f32 ORE_SCALE = 0.1f;
@@ -37,12 +37,12 @@ namespace MC {
 
     // Helper function to convert world position to chunk and local positions
     void WorldToChunkLocal(const glm::ivec3& worldPos, glm::ivec3& chunk_pos, glm::ivec3& local_pos) {
-        chunk_pos.x = static_cast<i32>(std::floor(worldPos.x / static_cast<f32>(Chunk::CHUNK_SIZE)));
-        chunk_pos.y = static_cast<i32>(std::floor(worldPos.y / static_cast<f32>(Chunk::CHUNK_SIZE)));
-        chunk_pos.z = static_cast<i32>(std::floor(worldPos.z / static_cast<f32>(Chunk::CHUNK_SIZE)));
+        chunk_pos = glm::floor(glm::vec3(worldPos) / static_cast<f32>(Chunk::CHUNK_SIZE));
 
         local_pos = worldPos - chunk_pos * Chunk::CHUNK_SIZE;
+        local_pos = (local_pos % Chunk::CHUNK_SIZE + Chunk::CHUNK_SIZE) % Chunk::CHUNK_SIZE;
     }
+
 
     Scene::Scene(EventHandler& event_handler, ThreadPool& tp)
         : m_event_handler(event_handler), m_thread_pool(tp),
@@ -158,8 +158,35 @@ namespace MC {
         return BiomeType::SNOWY_MOUNTAINS;
     }
 
+    i32 Scene::GetBiomeElevation(f32 elevation, BiomeType biome) {
+        switch (biome) {
+        case BiomeType::PLAINS:
+            return static_cast<i32>(elevation * 10 + 50);
+        case BiomeType::MOUNTAINS:
+            return static_cast<i32>(elevation * 40 + 80);
+        case BiomeType::DESERT:
+            return static_cast<i32>(elevation * 5 + 45);
+        case BiomeType::FOREST:
+            return static_cast<i32>(elevation * 15 + 55);
+        case BiomeType::SWAMP:
+            return static_cast<i32>(elevation * 4 + 48);
+        case BiomeType::JUNGLE:
+            return static_cast<i32>(elevation * 20 + 60);
+        case BiomeType::SAVANNA:
+            return static_cast<i32>(elevation * 12 + 52);
+        case BiomeType::TAIGA:
+            return static_cast<i32>(elevation * 18 + 58);
+        case BiomeType::SNOWY_MOUNTAINS:
+            return static_cast<i32>(elevation * 50 + 90);
+        case BiomeType::OCEAN:
+            return SEA_LEVEL - static_cast<i32>(elevation * 10); // Deeper oceans
+        default:
+            return static_cast<i32>(elevation * 20 + 60);
+        }
+    }
+
     f32 Scene::ComputeElevationNoise(f32 x, f32 z) {
-        const i32 OCTAVES = 4;
+        const i32 OCTAVES = 7;
         const f32 PERSISTENCE = 0.5f;
         const f32 LACUNARITY = 2.0f;
         f32 frequency = ELEVATION_SCALE;
@@ -184,31 +211,35 @@ namespace MC {
     i32 Scene::GetTerrainHeight(i32 world_x, i32 world_z, BiomeType biome) {
         f32 elevation = ComputeElevationNoise(static_cast<f32>(world_x), static_cast<f32>(world_z));
 
-        switch (biome) {
-        case BiomeType::PLAINS:
-            return static_cast<i32>(elevation * 10 + 50);
-        case BiomeType::MOUNTAINS:
-            return static_cast<i32>(elevation * 40 + 80);
-        case BiomeType::DESERT:
-            return static_cast<i32>(elevation * 5 + 45);
-        case BiomeType::FOREST:
-            return static_cast<i32>(elevation * 15 + 55);
-        case BiomeType::SWAMP:
-            return static_cast<i32>(elevation * 4 + 48);
-        case BiomeType::JUNGLE:
-            return static_cast<i32>(elevation * 20 + 60);
-        case BiomeType::SAVANNA:
-            return static_cast<i32>(elevation * 12 + 52);
-        case BiomeType::TAIGA:
-            return static_cast<i32>(elevation * 18 + 58);
-        case BiomeType::SNOWY_MOUNTAINS:
-            return static_cast<i32>(elevation * 50 + 90);
-        case BiomeType::OCEAN:
-            return static_cast<i32>(elevation * -20 + 30);
-        default:
-            return static_cast<i32>(elevation * 20 + 60);
+        // Get neighboring biome types and elevations
+        struct Neighbor {
+            BiomeType biome;
+            i32 height;
+        };
+
+        std::vector<Neighbor> neighbors = {
+            { biome, GetBiomeElevation(elevation, biome) },
+            { GetBiomeType(world_x + 1, world_z), GetBiomeElevation(elevation, GetBiomeType(world_x + 1, world_z)) },
+            { GetBiomeType(world_x - 1, world_z), GetBiomeElevation(elevation, GetBiomeType(world_x - 1, world_z)) },
+            { GetBiomeType(world_x, world_z + 1), GetBiomeElevation(elevation, GetBiomeType(world_x, world_z + 1)) },
+            { GetBiomeType(world_x, world_z - 1), GetBiomeElevation(elevation, GetBiomeType(world_x, world_z - 1)) },
+        };
+
+        // Calculate weights based on biome similarity (e.g., same biome gets higher weight)
+        f32 total_weight = 0.0f;
+        f32 blended_height = 0.0f;
+
+        for (const auto& neighbor : neighbors) {
+            f32 weight = (neighbor.biome == biome) ? 2.0f : 1.0f;
+            blended_height += neighbor.height * weight;
+            total_weight += weight;
         }
+
+        blended_height /= total_weight;
+
+        return static_cast<i32>(blended_height);
     }
+
 
 
     bool Scene::IsCave(i32 world_x, i32 world_y, i32 world_z) {
