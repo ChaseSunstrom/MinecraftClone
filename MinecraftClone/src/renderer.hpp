@@ -14,7 +14,7 @@ namespace MC {
         Renderer();
         ~Renderer();
 
-        void Render(Scene& scene);
+        void Render(ThreadPool& tp, Scene& scene);
 
     private:
         Shader m_shader;

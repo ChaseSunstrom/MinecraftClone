@@ -78,16 +78,26 @@ namespace MC {
         return m_needs_mesh_update;
     }
 
+    bool Chunk::HasMeshDataGenerated() const {
+        return m_mesh_data_generated;
+    }
+
+    bool Chunk::IsMeshDataUploaded() const {
+        return m_mesh_data_uploaded;
+    }
+
+
     void Chunk::SetNeedsMeshUpdate(bool needsUpdate) {
         m_needs_mesh_update = needsUpdate;
     }
 
-    void Chunk::UpdateMesh(const Scene& scene) {
+    void Chunk::GenerateMeshData(const Scene& scene) {
+        std::lock_guard<std::mutex> lock(m_mesh_mutex);
+
         m_vertices.clear();
         m_indices.clear();
         GLuint index_offset = 0;
 
-        // Directions and corresponding face normals
         static const glm::ivec3 directions[6] = {
             {1, 0, 0},  // POS_X
             {-1, 0, 0}, // NEG_X
@@ -123,7 +133,8 @@ namespace MC {
                 }
                 else {
                     // Neighbor might be in adjacent chunk
-                    neighbor_voxel = scene.GetVoxelAtPosition(worldPos + glm::vec3(directions[i]));
+                    glm::ivec3 neighbor_world_pos = glm::ivec3(worldPos + glm::vec3(m_position * CHUNK_SIZE) + glm::vec3(directions[i]));
+                    neighbor_voxel = scene.GetVoxelAtPosition(neighbor_world_pos);
                 }
 
                 if (!neighbor_voxel.has_value()) {
@@ -148,6 +159,17 @@ namespace MC {
                     index_offset += 4;
                 }
             }
+        }
+
+        m_mesh_data_generated = true;
+        m_mesh_data_uploaded = false;
+    }
+
+    void Chunk::UploadMeshData() {
+        std::lock_guard<std::mutex> lock(m_mesh_mutex);
+
+        if (!m_mesh_data_generated || m_mesh_data_uploaded) {
+            return; // Nothing to upload
         }
 
         // Generate or update VBOs
@@ -178,6 +200,6 @@ namespace MC {
         glBindVertexArray(0);
 
         m_needs_mesh_update = false;
+        m_mesh_data_uploaded = true;
     }
-
 }

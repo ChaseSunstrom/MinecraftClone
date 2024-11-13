@@ -7,7 +7,10 @@
 #include <unordered_map>
 #include <glm/glm.hpp>
 #include <array>
+#include <future>
+#include <mutex>
 #include <optional>
+#include <thread>
 
 namespace MC {
     class Scene;
@@ -35,6 +38,12 @@ namespace MC {
         bool NeedsMeshUpdate() const;
         void SetNeedsMeshUpdate(bool needsUpdate);
 
+        bool HasMeshDataGenerated() const;
+        bool IsMeshDataUploaded() const;
+
+        void GenerateMeshData(const Scene& scene);
+        void UploadMeshData();
+
         u32 GetVAO() const {
             return m_vao;
         }
@@ -42,7 +51,8 @@ namespace MC {
         size_t GetIndexCount() const {
             return m_indices.size();
         }
-
+    public:
+        std::future<void> mesh_generation_future;
     private:
         glm::ivec3 m_position; // Chunk position in chunk coordinates
         std::unordered_map<u32, Voxel> m_voxels; // Voxels in the chunk
@@ -54,6 +64,11 @@ namespace MC {
         std::vector<Vertex> m_vertices;
         std::vector<u32> m_indices;
 
+        std::mutex m_mesh_mutex;
+
+        // Flags to indicate if mesh data needs uploading
+        bool m_mesh_data_generated = false;
+        bool m_mesh_data_uploaded = false;
     };
 }
 

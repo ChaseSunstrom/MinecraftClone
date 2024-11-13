@@ -49,7 +49,11 @@ namespace MC {
         // Get or create the chunk
         auto chunk_it = m_chunks.find(chunk_pos);
         if (chunk_it == m_chunks.end()) {
-            m_chunks.emplace(chunk_pos, Chunk(chunk_pos));
+            m_chunks.emplace(
+                std::piecewise_construct,
+                std::forward_as_tuple(chunk_pos),
+                std::forward_as_tuple(chunk_pos)
+            );
             chunk_it = m_chunks.find(chunk_pos);
         }
 

@@ -32,7 +32,7 @@ namespace MC {
 	void Application::Update() {
 		RunUpdateFunctions();
 		m_window->Update();
-		m_renderer->Render(*m_scene);
+		m_renderer->Render(*m_thread_pool, *m_scene);
 	}
 
 	void Application::Shutdown() {

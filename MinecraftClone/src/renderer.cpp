@@ -39,7 +39,7 @@ namespace MC {
         glBindVertexArray(0);
     }
 
-    void Renderer::Render(Scene& scene) {
+    void Renderer::Render(ThreadPool& tp, Scene& scene) {
         glm::vec4 sky_color = scene.GetSkyColor();
         glClearColor(sky_color.r, sky_color.g, sky_color.b, sky_color.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -60,6 +60,26 @@ namespace MC {
         auto& chunks = scene.GetChunks();
 
         for (auto& [chunk_pos, chunk] : chunks) {
+            if (chunk.NeedsMeshUpdate() && !chunk.HasMeshDataGenerated()) {
+                chunk.mesh_generation_future = std::async(std::launch::async, [&chunk, &scene]() {
+                        chunk.GenerateMeshData(scene);
+                    });
+            }
+        }
+
+        tp.SyncRegisteredTasks();
+
+        for (auto& [chunk_pos, chunk] : chunks) {
+            if (chunk.mesh_generation_future.valid()) {
+                chunk.mesh_generation_future.wait();
+            }
+            if (chunk.HasMeshDataGenerated() && !chunk.IsMeshDataUploaded()) {
+                chunk.UploadMeshData();
+            }
+        }
+
+        // Now proceed to rendering
+        for (auto& [chunk_pos, chunk] : chunks) {
             // Skip chunks that are not visible
             glm::vec3 chunk_world_pos = glm::vec3(chunk_pos * Chunk::CHUNK_SIZE);
             glm::vec3 chunk_min = chunk_world_pos;
@@ -69,8 +89,9 @@ namespace MC {
                 continue; // Chunk is outside the view frustum
             }
 
-            if (chunk.NeedsMeshUpdate()) {
-                chunk.UpdateMesh(scene);
+            // Ensure mesh data is uploaded
+            if (!chunk.IsMeshDataUploaded()) {
+                continue; // Skip if mesh data is not ready
             }
 
             // Set up model matrix for the chunk
