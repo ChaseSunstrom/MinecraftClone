@@ -17,7 +17,7 @@ void GenerateWorld(MC::Application& app) {
 	const i32 world_width = 100;
 	const i32 world_depth = 100;
 	const f32 scale = 0.1f; // Scale of the noise
-	const i32 max_height = 20; // Maximum height of terrain
+	const i32 max_height = 10; // Maximum height of terrain
 
 	// Parameters for biome generation
 	const f32 biome_scale = 0.01f; // Larger scale for biomes
@@ -53,7 +53,7 @@ void GenerateWorld(MC::Application& app) {
 				biome = PLAINS;
 			}
 			else if (biome_noise < 0.6f) {
-				biome = FOREST;
+				biome = OCEAN;
 			}
 			else if (biome_noise < 0.8f) {
 				biome = SNOWY;
