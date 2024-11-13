@@ -18,6 +18,12 @@ void AddVoxels(MC::Application& app) {
 	}
 }
 
+void ZoomCamera(MC::Application& app, MC::EventPtr<MC::MouseScrolledEvent> event) {
+	MC::Camera& camera = app.GetScene().GetCamera();
+
+	camera.SetFOV(camera.GetFOV() + event->y);
+}
+
 static MC::VoxelColor color = MC::VoxelColor::GREEN;
 
 void SwitchColor(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event) {
@@ -253,5 +259,6 @@ i32 main() {
 			})
 		.AddEventFunction<MC::KeyPressedEvent, MC::KeyHeldEvent>(MoveCameraOnKeyPress)
 		.AddEventFunction<MC::MouseMovedEvent>(RotateCameraOnMouseMove)
+		.AddEventFunction<MC::MouseScrolledEvent>(ZoomCamera)
 		.Start();
 }
