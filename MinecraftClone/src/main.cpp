@@ -24,8 +24,8 @@ void ExpandCamera(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event)
 void GenerateWorld(MC::Application& app) {
 	MC::Scene& scene = app.GetScene();
 
-	const i32 world_width = 500;
-	const i32 world_depth = 500;
+	const i32 world_width = 1000;
+	const i32 world_depth = 1000;
 	const f32 scale = 0.1f;
 	const i32 max_height = 20;
 	const f32 biome_scale = 0.01f;
