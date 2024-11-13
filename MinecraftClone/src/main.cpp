@@ -9,8 +9,8 @@ void EscapeFunction(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> even
 }
 
 void AddVoxels(MC::Application& app) {
-	for (i32 i = 0; i < 100; i++) {
-		for (i32 j = 0; j < 1000; j++) {
+	for (i32 i = 0; i < 50; i++) {
+		for (i32 j = 0; j < 50; j++) {
 			MC::Voxel voxel((MC::VoxelColor)(i % (i32)MC::VoxelColor::DARK_RED), MC::Transform(glm::vec3(i, 0.0f, j)));
 			MC::Scene& scene = app.GetScene();
 			scene.InsertVoxel(voxel);
@@ -236,16 +236,14 @@ i32 main() {
 			})
 		.AddEventFunction<MC::KeyPressedEvent>(EscapeFunction)
 		.AddEventFunction<MC::MouseButtonPressedEvent>([&](MC::Application& app, MC::EventPtr<MC::MouseButtonPressedEvent> event) {
-		if (event->button == GLFW_MOUSE_BUTTON_RIGHT) {
-			PlaceVoxel(app, event);
-		}
-		else if (event->button == GLFW_MOUSE_BUTTON_LEFT) {
-			RemoveVoxel(app, event);
-		}
+					if (event->button == GLFW_MOUSE_BUTTON_RIGHT) {
+						PlaceVoxel(app, event);
+					}
+					else if (event->button == GLFW_MOUSE_BUTTON_LEFT) {
+						RemoveVoxel(app, event);
+					}
 			})
 		.AddEventFunction<MC::KeyPressedEvent, MC::KeyHeldEvent>(MoveCameraOnKeyPress)
 		.AddEventFunction<MC::MouseMovedEvent>(RotateCameraOnMouseMove)
 		.Start();
-
-
 }
