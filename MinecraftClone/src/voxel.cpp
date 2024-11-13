@@ -81,14 +81,38 @@ namespace MC {
 		switch (color) {
 		case VoxelColor::RED:
 			return { 1.0, 0.0, 0.0, 1.0 };
-		case VoxelColor::BLUE:
-			return { 0.0, 0.0, 1.0, 1.0 };
 		case VoxelColor::GREEN:
 			return { 0.0, 1.0, 0.0, 1.0 };
+		case VoxelColor::BLUE:
+			return { 0.0, 0.0, 1.0, 1.0 };
+		case VoxelColor::BLACK:
+			return { 0.0, 0.0, 0.0, 1.0 };
+		case VoxelColor::PINK:
+			return { 1.0, 0.75, 0.8, 1.0 };
 		case VoxelColor::WHITE:
 			return { 1.0, 1.0, 1.0, 1.0 };
-		case VoxelColor::BLACK:
-			return { 0.0, 0.0, 0.0, 0.0 };
+		case VoxelColor::PURPLE:
+			return { 0.5, 0.0, 0.5, 1.0 };
+		case VoxelColor::ORANGE:
+			return { 1.0, 0.65, 0.0, 1.0 };
+		case VoxelColor::YELLOW:
+			return { 1.0, 1.0, 0.0, 1.0 };
+		case VoxelColor::BROWN:
+			return { 0.65, 0.16, 0.16, 1.0 };
+		case VoxelColor::CYAN:
+			return { 0.0, 1.0, 1.0, 1.0 };
+		case VoxelColor::MAGENTA:
+			return { 1.0, 0.0, 1.0, 1.0 };
+		case VoxelColor::GRAY:
+			return { 0.5, 0.5, 0.5, 1.0 };
+		case VoxelColor::LIGHT_BLUE:
+			return { 0.68, 0.85, 0.9, 1.0 };
+		case VoxelColor::LIGHT_GREEN:
+			return { 0.56, 0.93, 0.56, 1.0 };
+		case VoxelColor::DARK_RED:
+			return { 0.55, 0.0, 0.0, 1.0 };
+		default:
+			return { 0.0, 0.0, 0.0, 1.0 }; // Default to black if color not recognized
 		}
 	}
 

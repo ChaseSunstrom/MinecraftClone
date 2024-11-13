@@ -11,7 +11,7 @@ void EscapeFunction(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> even
 void AddVoxels(MC::Application& app) {
 	for (i32 i = 0; i < 100; i++) {
 		for (i32 j = 0; j < 1000; j++) {
-			MC::Voxel voxel((MC::VoxelColor)(i % 6), MC::Transform(glm::vec3(i, 0.0f, j)));
+			MC::Voxel voxel((MC::VoxelColor)(i % (i32)MC::VoxelColor::DARK_RED), MC::Transform(glm::vec3(i, 0.0f, j)));
 			MC::Scene& scene = app.GetScene();
 			scene.InsertVoxel(voxel);
 		}
