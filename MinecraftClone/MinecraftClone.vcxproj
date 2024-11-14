@@ -138,8 +138,8 @@
   <ItemGroup>
     <None Include="src\unlit.frag" />
     <None Include="src\unlit.vert" />
-    <None Include="src\voxel.frag" />
-    <None Include="src\voxel.vert" />
+    <None Include="src\lit.frag" />
+    <None Include="src\lit.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

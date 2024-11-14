@@ -4,7 +4,7 @@
 
 namespace MC {
     Renderer::Renderer()
-        : m_lit_shader("src/voxel.vert", "src/voxel.frag"),
+        : m_lit_shader("src/lit.vert", "src/lit.frag"),
           m_unlit_shader("src/unlit.vert", "src/unlit.frag"),
 		  m_enable_lighting(true) {
     }
