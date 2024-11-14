@@ -36,7 +36,6 @@ namespace MC {
         return static_cast<f32>(h % 1000000) / 1000000.0f; // Normalize to [0,1)
     }
 
-
     // Helper function to convert world position to chunk and local positions
     void WorldToChunkLocal(const glm::ivec3& world_pos, glm::ivec3& chunk_pos, glm::ivec3& local_pos) {
         chunk_pos = glm::floor(glm::vec3(world_pos) / static_cast<f32>(Chunk::CHUNK_SIZE));
@@ -44,7 +43,6 @@ namespace MC {
         local_pos = world_pos - chunk_pos * Chunk::CHUNK_SIZE;
         local_pos = (local_pos % Chunk::CHUNK_SIZE + Chunk::CHUNK_SIZE) % Chunk::CHUNK_SIZE;
     }
-
 
     Scene::Scene(EventHandler& event_handler, ThreadPool& tp)
         : m_event_handler(event_handler), m_thread_pool(tp),
@@ -68,6 +66,7 @@ namespace MC {
 
     void Scene::InitializeScene() {
         Voxel::InitializeStaticBuffers();
+        m_sun.Initialize();
         UpdateChunksAroundPlayer();
     }
 
@@ -238,7 +237,6 @@ namespace MC {
 
         return static_cast<i32>(blended_height);
     }
-
 
     bool Scene::IsCave(i32 world_x, i32 world_y, i32 world_z) {
         i32 hash = Hash(world_x, world_y, world_z, m_seed);
@@ -439,6 +437,10 @@ namespace MC {
         return m_sky_color;
     }
 
+    const Sun& Scene::GetSun() const {
+        return m_sun;
+    }
+
     void Scene::InsertVoxel(VoxelType voxel_type, const glm::ivec3& world_pos) {
         std::lock_guard<std::mutex> lock(m_chunk_mutex);
 
@@ -460,7 +462,6 @@ namespace MC {
         // Insert the voxel
         chunk.SetVoxel(local_pos, voxel_type);
     }
-
 
     void Scene::RemoveVoxel(u32 voxel_id) {
         std::lock_guard<std::mutex> lock(m_chunk_mutex);

@@ -17,7 +17,7 @@ void SetConsoleColor(u32 color);
 #ifdef __TRACE__
 #	define LOG_TRACE(...)                                                                                                                                                                             \
 		SetConsoleColor(TEXT_COLOR_CYAN);                                                                                                                                                              \
-		std::cout << "[ TRACE ]" << __VA_ARGS__ << "\n"
+		std::cout << "[ TRACE ] " << __VA_ARGS__ << "\n"
 #else
 #	define LOG_TRACE(...)
 #endif // __TRACE__
@@ -25,7 +25,7 @@ void SetConsoleColor(u32 color);
 #ifdef __INFO__
 #	define LOG_INFO(...)                                                                                                                                                                              \
 		SetConsoleColor(TEXT_COLOR_GREEN);                                                                                                                                                             \
-		std::cout << "[ INFO ]" << __VA_ARGS__ << "\n"
+		std::cout << "[ INFO ] " << __VA_ARGS__ << "\n"
 #else
 #	define LOG_INFO(...)
 #endif // __INFO__

@@ -12,6 +12,7 @@
 #include "hash.hpp"
 #include "voxel_hit_info.hpp"
 #include "thread_pool.hpp"
+#include "sun.hpp"
 #include <mutex>
 
 namespace MC {
@@ -29,8 +30,6 @@ namespace MC {
         OCEAN
     };
 
-
-
     class Scene {
     public:
         Scene(EventHandler& event_handler, ThreadPool& tp);
@@ -43,6 +42,7 @@ namespace MC {
         // Accessors
         Camera& GetCamera() const;
         glm::vec4 GetSkyColor() const;
+        const Sun& GetSun() const;
 
         // Get all chunks
         std::unordered_map<glm::ivec3, std::shared_ptr<Chunk>>& GetChunks();
@@ -85,15 +85,12 @@ namespace MC {
         std::unique_ptr<Camera> m_camera;
         glm::vec4 m_sky_color;
         glm::ivec3 m_last_player_chunk_pos;
-
         EventHandler& m_event_handler;
-
         mutable std::mutex m_chunk_mutex; // Mutex for thread safety
-
         // Thread pool for chunk generation
         ThreadPool& m_thread_pool;
-
         u32 m_seed;
+        Sun m_sun;
     };
 }
 

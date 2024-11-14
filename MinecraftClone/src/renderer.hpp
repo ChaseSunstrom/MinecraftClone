@@ -12,20 +12,19 @@ namespace MC {
     class Renderer {
     public:
         Renderer();
-        ~Renderer();
+        ~Renderer() = default;
 
         void Render(ThreadPool& tp, Scene& scene);
+        void RenderSun(const Sun& sun, const Camera& camera, const glm::vec3& light_direction);
 
+        void EnableLighting(bool enable);
+        bool IsLightingEnabled() const;
+    public:
     private:
-        Shader m_shader;
-        u32 m_instance_vbo;
-
-        // Chunk VAO and VBOs
-        u32 m_chunk_vao;
-        u32 m_chunk_vbo;
-        u32 m_chunk_ebo;
-
-        void InitializeBuffers();
+        // Normally I would not hardcode these but this is just a simple minecraft clone, nothing fancy
+        Shader m_lit_shader;
+        Shader m_unlit_shader;
+        bool m_enable_lighting;
     };
 }
 

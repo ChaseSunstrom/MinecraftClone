@@ -118,6 +118,7 @@
     <ClInclude Include="src\voxel_face.hpp" />
     <ClInclude Include="src\voxel_hit_info.hpp" />
     <ClInclude Include="src\window.hpp" />
+    <ClInclude Include="src\sun.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\application.cpp" />
@@ -129,11 +130,14 @@
     <ClCompile Include="src\renderer.cpp" />
     <ClCompile Include="src\scene.cpp" />
     <ClCompile Include="src\shader.cpp" />
+    <ClCompile Include="src\sun.cpp" />
     <ClCompile Include="src\thread_pool.cpp" />
     <ClCompile Include="src\voxel.cpp" />
     <ClCompile Include="src\window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="src\unlit.frag" />
+    <None Include="src\unlit.vert" />
     <None Include="src\voxel.frag" />
     <None Include="src\voxel.vert" />
   </ItemGroup>

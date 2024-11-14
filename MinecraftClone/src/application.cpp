@@ -153,6 +153,12 @@ namespace MC {
 
 	Window& Application::GetWindow() const { return *m_window; }
 
+	Renderer& Application::GetRenderer() const
+	{
+		return *m_renderer;
+	}
+
+
 	EventHandler& Application::GetEventHandler() const { return *m_event_handler; }
 
 	const bool Application::Running() const { return m_window->Running(); }

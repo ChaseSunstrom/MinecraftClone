@@ -34,6 +34,7 @@ namespace MC {
 
 		Application& CreateWindow(const std::string& title, i32 width, i32 height);
 		Window& GetWindow() const;
+		Renderer& GetRenderer() const;
 		EventHandler& GetEventHandler() const;
 		ThreadPool& GetThreadPool() const;
 

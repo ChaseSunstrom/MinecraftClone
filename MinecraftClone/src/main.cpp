@@ -234,6 +234,16 @@ void RotateCameraOnMouseMove(MC::Application& app, MC::EventPtr<MC::MouseMovedEv
 	camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
+void DisableLighting(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event)
+{
+	if (event->key == GLFW_KEY_F)
+	{
+		MC::Renderer& renderer = app.GetRenderer();
+		bool is_lit = renderer.IsLightingEnabled();
+		app.GetRenderer().EnableLighting(!is_lit);
+	}
+}
+
 i32 main() {
 	MC::Application app;
 
@@ -262,6 +272,7 @@ i32 main() {
 					}
 			})
 			*/
+		.AddEventFunction<MC::KeyPressedEvent>(DisableLighting)
 		.AddEventFunction<MC::KeyPressedEvent, MC::KeyHeldEvent>(MoveCameraOnKeyPress)
 		.AddEventFunction<MC::MouseMovedEvent>(RotateCameraOnMouseMove)
 		.AddEventFunction<MC::MouseScrolledEvent>(ZoomCamera)
