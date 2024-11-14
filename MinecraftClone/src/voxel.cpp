@@ -61,23 +61,18 @@ namespace MC {
     }
 
 
-    // Constructors
     Voxel::Voxel()
         : m_id(s_next_id++),
         m_voxel_type(VoxelType::AIR),
         visible_faces(0x3F),
-        m_color(VoxelTypeToColor(m_voxel_type)),
         m_local_position(0) {}
 
-    Voxel::Voxel(VoxelType type, const Transform& transform)
+    Voxel::Voxel(VoxelType type)
         : m_id(s_next_id++),
         m_voxel_type(type),
-        m_transform(transform),
         visible_faces(0x3F),
-        m_color(VoxelTypeToColor(type)),
         m_local_position(0) {}
 
-    // Face visibility methods
     bool Voxel::IsFaceVisible(FaceIndex face) const {
         return (visible_faces & (1 << face)) != 0;
     }
@@ -91,84 +86,32 @@ namespace MC {
         }
     }
 
-    // Accessor methods
     VoxelType Voxel::GetVoxelType() const {
         return m_voxel_type;
     }
 
     glm::vec4 Voxel::GetColor() const {
-        return m_color;
-    }
-
-    Transform Voxel::GetTransform() const {
-        return m_transform;
+        return VoxelTypeToColor(m_voxel_type);
     }
 
     u32 Voxel::GetID() const {
         return m_id;
     }
 
-    glm::vec3 Voxel::GetPos() const {
-        return m_transform.GetPos();
-    }
-
-    glm::vec3 Voxel::GetRot() const {
-        return m_transform.GetRot();
-    }
-
-    glm::vec3 Voxel::GetScale() const {
-        return m_transform.GetScale();
-    }
-
     glm::ivec3 Voxel::GetLocalPosition() const {
         return m_local_position;
     }
 
-    // Mutator methods
     void Voxel::SetVoxelType(VoxelType type) {
         m_voxel_type = type;
-        m_color = VoxelTypeToColor(type);
-    }
-
-    void Voxel::SetColor(const glm::vec4& color) {
-        m_color = color;
-    }
-
-    void Voxel::SetTransform(const Transform& transform) {
-        m_transform = transform;
     }
 
     void Voxel::SetID(u32 id) {
         m_id = id;
     }
 
-    void Voxel::Move(const glm::vec3& pos) {
-        m_transform.Move(pos);
-    }
-
-    void Voxel::Rotate(const glm::vec3& rot) {
-        m_transform.Rotate(rot);
-    }
-
-    void Voxel::Scale(const glm::vec3& scale) {
-        m_transform.Scale(scale);
-    }
-
     void Voxel::SetLocalPosition(const glm::ivec3& local_pos) {
         m_local_position = local_pos;
-    }
-
-    // Static buffer methods
-    u32 Voxel::GetVao() {
-        return s_vao;
-    }
-
-    u32 Voxel::GetVbo() {
-        return s_vbo;
-    }
-
-    u32 Voxel::GetEbo() {
-        return s_ebo;
     }
 
     void Voxel::InitializeStaticBuffers() {

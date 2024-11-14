@@ -6,70 +6,39 @@
 namespace MC {
     Chunk::Chunk(const glm::ivec3& position)
         : m_position(position), m_needs_mesh_update(true) {
-        // Initialize voxel ID array to null
-        for (auto& plane : m_voxel_ids)
-            for (auto& row : plane)
-                for (auto& voxel_id : row)
-                    voxel_id = std::nullopt;
+        // Initialize all voxels to AIR
+        m_voxel_types.fill(static_cast<u32>(VoxelType::AIR));
     }
 
-    void Chunk::SetVoxel(const glm::ivec3& local_pos, const Voxel& voxel) {
+    void Chunk::SetVoxel(const glm::ivec3& local_pos, VoxelType voxel_type) {
         if (local_pos.x < 0 || local_pos.x >= CHUNK_SIZE ||
             local_pos.y < 0 || local_pos.y >= CHUNK_SIZE ||
             local_pos.z < 0 || local_pos.z >= CHUNK_SIZE) {
             return;
         }
 
-        u32 voxel_id = voxel.GetID();
-        m_voxels[voxel_id] = voxel;
-        m_voxel_ids[local_pos.z][local_pos.y][local_pos.x] = voxel_id;
+        size_t index = GetIndex(local_pos);
+        m_voxel_types[index] = static_cast<u32>(voxel_type);
         m_needs_mesh_update = true;
-
-        Voxel voxel_copy = voxel;
-        voxel_copy.SetLocalPosition(local_pos);
-        m_voxels[voxel_id] = voxel_copy;
     }
 
-    std::optional<Voxel> Chunk::GetVoxel(const glm::ivec3& local_pos) const {
+    VoxelType Chunk::GetVoxel(const glm::ivec3& local_pos) const {
         if (local_pos.x < 0 || local_pos.x >= CHUNK_SIZE ||
             local_pos.y < 0 || local_pos.y >= CHUNK_SIZE ||
             local_pos.z < 0 || local_pos.z >= CHUNK_SIZE) {
-            return std::nullopt;
+            return VoxelType::AIR;
         }
 
-        auto voxel_id_opt = m_voxel_ids[local_pos.z][local_pos.y][local_pos.x];
-        if (voxel_id_opt.has_value()) {
-            u32 voxel_id = voxel_id_opt.value();
-            auto it = m_voxels.find(voxel_id);
-            if (it != m_voxels.end()) {
-                return it->second;
-            }
-        }
-        return std::nullopt;
+        size_t index = GetIndex(local_pos);
+        return static_cast<VoxelType>(m_voxel_types[index]);
     }
 
     void Chunk::RemoveVoxel(const glm::ivec3& local_pos) {
-        if (local_pos.x < 0 || local_pos.x >= CHUNK_SIZE ||
-            local_pos.y < 0 || local_pos.y >= CHUNK_SIZE ||
-            local_pos.z < 0 || local_pos.z >= CHUNK_SIZE) {
-            return;
-        }
-
-        auto voxel_id_opt = m_voxel_ids[local_pos.x][local_pos.y][local_pos.z];
-        if (voxel_id_opt.has_value()) {
-            u32 voxel_id = voxel_id_opt.value();
-            m_voxels.erase(voxel_id);
-            m_voxel_ids[local_pos.x][local_pos.y][local_pos.z] = std::nullopt;
-            m_needs_mesh_update = true;
-        }
+        SetVoxel(local_pos, VoxelType::AIR);
     }
 
     glm::ivec3 Chunk::GetPosition() const {
         return m_position;
-    }
-
-    const std::unordered_map<u32, Voxel>& Chunk::GetVoxels() const {
-        return m_voxels;
     }
 
     bool Chunk::NeedsMeshUpdate() const {
@@ -93,18 +62,9 @@ namespace MC {
 
         m_vertices.clear();
         m_indices.clear();
-        GLuint index_offset = 0;
+        u32 index_offset = 0;
 
         static const glm::ivec3 directions[6] = {
-            {1, 0, 0},  // POS_X
-            {-1, 0, 0}, // NEG_X
-            {0, 1, 0},  // POS_Y
-            {0, -1, 0}, // NEG_Y
-            {0, 0, 1},  // POS_Z
-            {0, 0, -1}  // NEG_Z
-        };
-
-        static const glm::vec3 faceNormals[6] = {
             {1, 0, 0},   // POS_X
             {-1, 0, 0},  // NEG_X
             {0, 1, 0},   // POS_Y
@@ -113,47 +73,71 @@ namespace MC {
             {0, 0, -1}   // NEG_Z
         };
 
-        for (auto& [voxel_id, voxel] : m_voxels) {
-            glm::ivec3 local_pos = voxel.GetLocalPosition();
-            glm::vec3 worldPos = glm::vec3(local_pos);
+        static const glm::vec3 face_normals[6] = {
+            {1.0f, 0.0f, 0.0f},   // POS_X
+            {-1.0f, 0.0f, 0.0f},  // NEG_X
+            {0.0f, 1.0f, 0.0f},   // POS_Y
+            {0.0f, -1.0f, 0.0f},  // NEG_Y
+            {0.0f, 0.0f, 1.0f},   // POS_Z
+            {0.0f, 0.0f, -1.0f}   // NEG_Z
+        };
 
-            // For each face
-            for (int i = 0; i < 6; ++i) {
-                glm::ivec3 neighbor_pos = local_pos + directions[i];
+        // Loop over all positions in the chunk
+        for (i32 x = 0; x < CHUNK_SIZE; ++x) {
+            for (i32 y = 0; y < CHUNK_SIZE; ++y) {
+                for (i32 z = 0; z < CHUNK_SIZE; ++z) {
+                    glm::ivec3 local_pos(x, y, z);
+                    size_t index = GetIndex(local_pos);
+                    VoxelType voxel_type = static_cast<VoxelType>(m_voxel_types[index]);
 
-                // Check if neighbor voxel exists
-                std::optional<Voxel> neighbor_voxel;
-                if (neighbor_pos.x >= 0 && neighbor_pos.x < CHUNK_SIZE &&
-                    neighbor_pos.y >= 0 && neighbor_pos.y < CHUNK_SIZE &&
-                    neighbor_pos.z >= 0 && neighbor_pos.z < CHUNK_SIZE) {
-                    neighbor_voxel = GetVoxel(neighbor_pos);
-                }
-                else {
-                    // Neighbor might be in adjacent chunk
-                    glm::ivec3 neighbor_world_pos = glm::ivec3(worldPos + glm::vec3(m_position * CHUNK_SIZE) + glm::vec3(directions[i]));
-                    neighbor_voxel = scene.GetVoxelAtPosition(neighbor_world_pos);
-                }
-
-                if (!neighbor_voxel.has_value()) {
-                    // Neighbor voxel does not exist, so this face is visible
-                    // Create face vertices and indices
-                    Vertex face_vertices[4];
-                    for (i32 j = 0; j < 4; ++j) {
-                        face_vertices[j].pos = VOXEL_FACE_VERTICES[i][j] + worldPos;
-                        face_vertices[j].normal = faceNormals[i];
-                        face_vertices[j].color = voxel.GetColor();
+                    // Skip empty voxels
+                    if (voxel_type == VoxelType::AIR) {
+                        continue;
                     }
 
-                    m_vertices.insert(m_vertices.end(), face_vertices, face_vertices + 4);
+                    // Calculate the world position of the voxel
+                    glm::vec3 world_pos = glm::vec3(x, y, z);
 
-                    m_indices.push_back(index_offset + 0);
-                    m_indices.push_back(index_offset + 1);
-                    m_indices.push_back(index_offset + 2);
-                    m_indices.push_back(index_offset + 2);
-                    m_indices.push_back(index_offset + 3);
-                    m_indices.push_back(index_offset + 0);
+                    // For each face
+                    for (i32 i = 0; i < 6; ++i) {
+                        glm::ivec3 neighbor_pos = local_pos + directions[i];
+                        VoxelType neighbor_voxel_type;
 
-                    index_offset += 4;
+                        if (neighbor_pos.x >= 0 && neighbor_pos.x < CHUNK_SIZE &&
+                            neighbor_pos.y >= 0 && neighbor_pos.y < CHUNK_SIZE &&
+                            neighbor_pos.z >= 0 && neighbor_pos.z < CHUNK_SIZE) {
+                            // Neighbor is within this chunk
+                            size_t neighbor_index = GetIndex(neighbor_pos);
+                            neighbor_voxel_type = static_cast<VoxelType>(m_voxel_types[neighbor_index]);
+                        }
+                        else {
+                            // Neighbor is in a different chunk
+                            glm::ivec3 neighbor_world_pos = m_position * CHUNK_SIZE + neighbor_pos;
+                            neighbor_voxel_type = scene.GetVoxelAtPosition(neighbor_world_pos);
+                        }
+
+                        // If the neighbor voxel is AIR or transparent, render this face
+                        if (neighbor_voxel_type == VoxelType::AIR) {
+                            // Create face vertices and indices
+                            Vertex face_vertices[4];
+                            for (i32 j = 0; j < 4; ++j) {
+                                face_vertices[j].pos = VOXEL_FACE_VERTICES[i][j] + world_pos;
+                                face_vertices[j].normal = face_normals[i];
+                                face_vertices[j].color = VoxelTypeToColor(voxel_type);
+                            }
+
+                            m_vertices.insert(m_vertices.end(), face_vertices, face_vertices + 4);
+
+                            m_indices.push_back(index_offset + 0);
+                            m_indices.push_back(index_offset + 1);
+                            m_indices.push_back(index_offset + 2);
+                            m_indices.push_back(index_offset + 2);
+                            m_indices.push_back(index_offset + 3);
+                            m_indices.push_back(index_offset + 0);
+
+                            index_offset += 4;
+                        }
+                    }
                 }
             }
         }
@@ -161,6 +145,7 @@ namespace MC {
         m_mesh_data_generated = true;
         m_mesh_data_uploaded = false;
     }
+
 
     void Chunk::UploadMeshData() {
         std::lock_guard<std::mutex> lock(m_mesh_mutex);
@@ -182,7 +167,7 @@ namespace MC {
         glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(Vertex), m_vertices.data(), GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(GLuint), m_indices.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(u32), m_indices.data(), GL_STATIC_DRAW);
 
         // Vertex attributes
         glEnableVertexAttribArray(0); // Position
@@ -203,7 +188,7 @@ namespace MC {
     void Chunk::Update(const Scene& scene, ThreadPool& tp) {
         if (NeedsMeshUpdate() && !HasMeshDataGenerated()) {
             // Enqueue mesh generation
-            mesh_generation_future = tp.Enqueue(TaskPriority::VERY_HIGH, true, [this, &scene]() {
+            m_mesh_generation_future = tp.Enqueue(TaskPriority::VERY_HIGH, true, [this, &scene]() {
                     GenerateMeshData(scene);
                     SetNeedsMeshUpdate(false);
                 });

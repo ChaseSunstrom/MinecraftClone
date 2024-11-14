@@ -49,7 +49,7 @@ namespace MC {
 
         // Voxel retrieval
         std::optional<Voxel> GetVoxel(u32 id) const;
-        std::optional<Voxel> GetVoxelAtPosition(const glm::ivec3& world_pos) const;
+        VoxelType GetVoxelAtPosition(const glm::ivec3& world_pos) const;
 
         // Raycasting
         std::optional<VoxelHitInfo> GetVoxelLookedAt(f32 max_distance = 100.0f) const;
@@ -58,8 +58,7 @@ namespace MC {
         void UpdateChunksAroundPlayer();
 
         // Insert and remove voxels
-        void InsertVoxel(const Voxel& voxel);
-        void InsertVoxels(const std::vector<Voxel>& voxels);
+        void InsertVoxel(VoxelType voxel_type, const glm::ivec3& world_pos);
         void RemoveVoxel(u32 voxel_id);
 
         void UpdateChunks();

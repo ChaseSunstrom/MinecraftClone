@@ -34,6 +34,7 @@ void SwitchColor(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> event) 
 	}
 }
 
+/*
 void PlaceVoxel(MC::Application& app, MC::EventPtr<MC::MouseButtonPressedEvent> event) {
 	if (event->button == GLFW_MOUSE_BUTTON_RIGHT) {
 		MC::Scene& scene = app.GetScene();
@@ -148,6 +149,7 @@ void RemoveVoxel(MC::Application& app, MC::EventPtr<MC::MouseButtonPressedEvent>
 		}
 	}
 }
+*/
 
 void MoveCameraOnKeyPress(MC::Application& app, MC::MultiEventPtr<MC::KeyPressedEvent, MC::KeyHeldEvent> event) {
 	MC::Camera& camera = app.GetScene().GetCamera();
@@ -250,6 +252,7 @@ i32 main() {
 			})
 		.AddEventFunction<MC::KeyPressedEvent>(SwitchColor)
 		.AddEventFunction<MC::KeyPressedEvent>(EscapeFunction)
+	/*
 		.AddEventFunction<MC::MouseButtonPressedEvent>([&](MC::Application& app, MC::EventPtr<MC::MouseButtonPressedEvent> event) {
 					if (event->button == GLFW_MOUSE_BUTTON_RIGHT) {
 						PlaceVoxel(app, event);
@@ -258,6 +261,7 @@ i32 main() {
 						RemoveVoxel(app, event);
 					}
 			})
+			*/
 		.AddEventFunction<MC::KeyPressedEvent, MC::KeyHeldEvent>(MoveCameraOnKeyPress)
 		.AddEventFunction<MC::MouseMovedEvent>(RotateCameraOnMouseMove)
 		.AddEventFunction<MC::MouseScrolledEvent>(ZoomCamera)

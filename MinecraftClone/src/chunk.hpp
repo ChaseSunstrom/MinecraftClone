@@ -1,36 +1,29 @@
 #ifndef CHUNK_HPP
 #define CHUNK_HPP
 
-#include "voxel.hpp"
 #include "types.hpp"
-#include "hash.hpp"
+#include "voxel.hpp"
 #include "thread_pool.hpp"
-#include <unordered_map>
-#include <glm/glm.hpp>
 #include <array>
-#include <future>
 #include <mutex>
-#include <optional>
-#include <thread>
+#include <vector>
 
 namespace MC {
     class Scene;
     class Chunk {
     public:
-        static const i32 CHUNK_SIZE = 16;
+        static constexpr i32 CHUNK_SIZE = 16;
+        static constexpr size_t TOTAL_VOXELS = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
         Chunk(const glm::ivec3& position);
 
         // Voxel operations
-        void SetVoxel(const glm::ivec3& local_pos, const Voxel& voxel);
-        std::optional<Voxel> GetVoxel(const glm::ivec3& local_pos) const;
+        void SetVoxel(const glm::ivec3& local_pos, VoxelType voxel_type);
+        VoxelType GetVoxel(const glm::ivec3& local_pos) const;
         void RemoveVoxel(const glm::ivec3& local_pos);
 
         // Position of the chunk in chunk coordinates
         glm::ivec3 GetPosition() const;
-
-        // Accessors for rendering
-        const std::unordered_map<u32, Voxel>& GetVoxels() const;
 
         // Update the mesh data for rendering
         void UpdateMesh(const Scene& scene);
@@ -54,12 +47,16 @@ namespace MC {
         size_t GetIndexCount() const {
             return m_indices.size();
         }
-    public:
-        std::future<void> mesh_generation_future;
+
+    private:
+        inline size_t GetIndex(const glm::ivec3& local_pos) const {
+            return local_pos.x + CHUNK_SIZE * (local_pos.y + CHUNK_SIZE * local_pos.z);
+        }
+
     private:
         glm::ivec3 m_position; // Chunk position in chunk coordinates
-        std::unordered_map<u32, Voxel> m_voxels; // Voxels in the chunk
-        std::array<std::array<std::array<std::optional<u32>, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_SIZE> m_voxel_ids;
+        std::array<uint8_t, TOTAL_VOXELS> m_voxel_types; // Voxel types in the chunk
+
         bool m_needs_mesh_update;
         u32 m_vao = 0;
         u32 m_vbo = 0;
@@ -68,6 +65,7 @@ namespace MC {
         std::vector<u32> m_indices;
 
         std::mutex m_mesh_mutex;
+        std::future<void> m_mesh_generation_future;
 
         // Flags to indicate if mesh data needs uploading
         bool m_mesh_data_generated = false;

@@ -18,6 +18,8 @@ namespace MC {
     const f32 CAVE_THRESHOLD = 0.6f;
     const f32 TREE_THRESHOLD = 0.8f;
     const i32 SEA_LEVEL = 65;
+    // Limit the number of chunks to generate per frame
+    const size_t MAX_CHUNKS_PER_FRAME = 5;
 
     f32 Hash(i32 x, i32 y, i32 z, uint32_t seed) {
         uint32_t h = seed;
@@ -36,10 +38,10 @@ namespace MC {
 
 
     // Helper function to convert world position to chunk and local positions
-    void WorldToChunkLocal(const glm::ivec3& worldPos, glm::ivec3& chunk_pos, glm::ivec3& local_pos) {
-        chunk_pos = glm::floor(glm::vec3(worldPos) / static_cast<f32>(Chunk::CHUNK_SIZE));
+    void WorldToChunkLocal(const glm::ivec3& world_pos, glm::ivec3& chunk_pos, glm::ivec3& local_pos) {
+        chunk_pos = glm::floor(glm::vec3(world_pos) / static_cast<f32>(Chunk::CHUNK_SIZE));
 
-        local_pos = worldPos - chunk_pos * Chunk::CHUNK_SIZE;
+        local_pos = world_pos - chunk_pos * Chunk::CHUNK_SIZE;
         local_pos = (local_pos % Chunk::CHUNK_SIZE + Chunk::CHUNK_SIZE) % Chunk::CHUNK_SIZE;
     }
 
@@ -115,8 +117,6 @@ namespace MC {
             return glm::length(glm::vec3(a - player_chunk_pos)) < glm::length(glm::vec3(b - player_chunk_pos));
             });
 
-        // Limit the number of chunks to generate per frame
-        const size_t MAX_CHUNKS_PER_FRAME = 10;
         size_t chunks_loaded = 0;
 
         for (const auto& chunk_pos : chunks_to_load) {
@@ -207,7 +207,6 @@ namespace MC {
         return (noise_value + 1.0f) / 2.0f; // Map to [0, 1]
     }
 
-
     i32 Scene::GetTerrainHeight(i32 world_x, i32 world_z, BiomeType biome) {
         f32 elevation = ComputeElevationNoise(static_cast<f32>(world_x), static_cast<f32>(world_z));
 
@@ -239,7 +238,6 @@ namespace MC {
 
         return static_cast<i32>(blended_height);
     }
-
 
 
     bool Scene::IsCave(i32 world_x, i32 world_y, i32 world_z) {
@@ -356,8 +354,7 @@ namespace MC {
                     world_y % Chunk::CHUNK_SIZE,
                     world_z % Chunk::CHUNK_SIZE
                 );
-                Voxel voxel(VoxelType::WOOD);
-                chunk.SetVoxel(local_pos, voxel);
+                chunk.SetVoxel(local_pos, VoxelType::WOOD);
             }
 
             // Add leaves
@@ -381,8 +378,7 @@ namespace MC {
                                 leaf_type = VoxelType::SNOW;
                             }
 
-                            Voxel voxel(leaf_type);
-                            chunk.SetVoxel(local_pos, voxel);
+                            chunk.SetVoxel(local_pos, leaf_type);
                         }
                     }
                 }
@@ -423,8 +419,7 @@ namespace MC {
 
                     if (voxel_type != VoxelType::AIR) {
                         glm::ivec3 local_pos(x, y, z);
-                        Voxel voxel(voxel_type);
-                        chunk.SetVoxel(local_pos, voxel);
+                        chunk.SetVoxel(local_pos, voxel_type);
                     }
                 }
 
@@ -444,13 +439,11 @@ namespace MC {
         return m_sky_color;
     }
 
-    void Scene::InsertVoxel(const Voxel& voxel) {
+    void Scene::InsertVoxel(VoxelType voxel_type, const glm::ivec3& world_pos) {
         std::lock_guard<std::mutex> lock(m_chunk_mutex);
-        glm::vec3 pos = voxel.GetTransform().GetPos();
-        glm::ivec3 worldPos = glm::ivec3(glm::floor(pos));
 
         glm::ivec3 chunk_pos, local_pos;
-        WorldToChunkLocal(worldPos, chunk_pos, local_pos);
+        WorldToChunkLocal(world_pos, chunk_pos, local_pos);
 
         // Get or create the chunk
         auto chunk_it = m_chunks.find(chunk_pos);
@@ -464,24 +457,10 @@ namespace MC {
 
         Chunk& chunk = *chunk_it->second;
 
-        // Check for existing voxel at the position
-        auto existing_voxel = chunk.GetVoxel(local_pos);
-        if (existing_voxel.has_value()) {
-            std::cerr << "Cannot insert voxel: A voxel already exists at ("
-                << worldPos.x << ", " << worldPos.y << ", " << worldPos.z << ").\n";
-            return;
-        }
-
         // Insert the voxel
-        chunk.SetVoxel(local_pos, voxel);
-        m_voxelLocations[voxel.GetID()] = std::make_pair(chunk_pos, local_pos);
+        chunk.SetVoxel(local_pos, voxel_type);
     }
 
-    void Scene::InsertVoxels(const std::vector<Voxel>& voxels) {
-        for (const auto& voxel : voxels) {
-            InsertVoxel(voxel);
-        }
-    }
 
     void Scene::RemoveVoxel(u32 voxel_id) {
         std::lock_guard<std::mutex> lock(m_chunk_mutex);
@@ -520,18 +499,19 @@ namespace MC {
         return std::nullopt;
     }
 
-    std::optional<Voxel> Scene::GetVoxelAtPosition(const glm::ivec3& worldPos) const {
+    VoxelType Scene::GetVoxelAtPosition(const glm::ivec3& world_pos) const {
         std::lock_guard<std::mutex> lock(m_chunk_mutex);
         glm::ivec3 chunk_pos, local_pos;
-        WorldToChunkLocal(worldPos, chunk_pos, local_pos);
+        WorldToChunkLocal(world_pos, chunk_pos, local_pos);
 
         auto chunk_it = m_chunks.find(chunk_pos);
         if (chunk_it != m_chunks.end()) {
             const Chunk& chunk = *chunk_it->second;
             return chunk.GetVoxel(local_pos);
         }
-        return std::nullopt;
+        return VoxelType::AIR;
     }
+
 
     std::unordered_map<glm::ivec3, std::shared_ptr<Chunk>>& Scene::GetChunks() {
         return m_chunks;
@@ -549,95 +529,7 @@ namespace MC {
         }
     }
 
-
     std::optional<VoxelHitInfo> Scene::GetVoxelLookedAt(f32 max_distance) const {
-        Camera& camera = GetCamera();
-        glm::vec3 origin = camera.GetPosition();
-        glm::vec3 direction = glm::normalize(camera.GetFront());
-
-        Ray ray(origin, direction);
-        glm::ivec3 current_voxel = glm::ivec3(glm::floor(ray.origin));
-
-        glm::vec3 t_max;
-        glm::vec3 t_delta;
-        glm::ivec3 step;
-        i32 last_step_axis = -1;
-
-        for (i32 i = 0; i < 3; ++i) {
-            if (ray.direction[i] > 0.0f) {
-                step[i] = 1;
-                t_max[i] = (static_cast<f32>(current_voxel[i] + 1) - ray.origin[i]) / ray.direction[i];
-                t_delta[i] = 1.0f / ray.direction[i];
-            }
-            else if (ray.direction[i] < 0.0f) {
-                step[i] = -1;
-                t_max[i] = (ray.origin[i] - static_cast<f32>(current_voxel[i])) / -ray.direction[i];
-                t_delta[i] = 1.0f / -ray.direction[i];
-            }
-            else {
-                step[i] = 0;
-                t_max[i] = std::numeric_limits<f32>::infinity();
-                t_delta[i] = std::numeric_limits<f32>::infinity();
-            }
-        }
-
-        f32 distance_traveled = 0.0f;
-
-        while (distance_traveled < max_distance) {
-            glm::ivec3 grid_pos = current_voxel;
-            auto voxel_opt = GetVoxelAtPosition(grid_pos);
-            if (voxel_opt.has_value()) {
-                // Determine hit_face based on last stepped axis
-                VoxelFace hit_face;
-                switch (last_step_axis) {
-                case 0:
-                    hit_face = (step.x > 0) ? VoxelFace::NEG_X : VoxelFace::POS_X;
-                    break;
-                case 1:
-                    hit_face = (step.y > 0) ? VoxelFace::NEG_Y : VoxelFace::POS_Y;
-                    break;
-                case 2:
-                    hit_face = (step.z > 0) ? VoxelFace::NEG_Z : VoxelFace::POS_Z;
-                    break;
-                default:
-                    hit_face = VoxelFace::POS_X;
-                }
-
-                VoxelHitInfo hit_info{ voxel_opt.value(), hit_face };
-                return hit_info;
-            }
-
-            // Determine which axis to step
-            if (t_max.x < t_max.y) {
-                if (t_max.x < t_max.z) {
-                    current_voxel.x += step.x;
-                    distance_traveled = t_max.x;
-                    t_max.x += t_delta.x;
-                    last_step_axis = 0;
-                }
-                else {
-                    current_voxel.z += step.z;
-                    distance_traveled = t_max.z;
-                    t_max.z += t_delta.z;
-                    last_step_axis = 2;
-                }
-            }
-            else {
-                if (t_max.y < t_max.z) {
-                    current_voxel.y += step.y;
-                    distance_traveled = t_max.y;
-                    t_max.y += t_delta.y;
-                    last_step_axis = 1;
-                }
-                else {
-                    current_voxel.z += step.z;
-                    distance_traveled = t_max.z;
-                    t_max.z += t_delta.z;
-                    last_step_axis = 2;
-                }
-            }
-        }
-
         return std::nullopt;
     }
 

@@ -48,27 +48,18 @@ namespace MC {
 		};
 
 		Voxel();
-		Voxel(VoxelType type, const Transform& transform = Transform());
+		Voxel(VoxelType type);
 
 		bool IsFaceVisible(FaceIndex face) const;
 		void SetFaceVisible(FaceIndex face, bool visible);
 
 		VoxelType GetVoxelType() const;
 		glm::vec4 GetColor() const;
-		Transform GetTransform() const;
 		u32 GetID() const;
-		glm::vec3 GetPos() const;
-		glm::vec3 GetRot() const;
-		glm::vec3 GetScale() const;
 		glm::ivec3 GetLocalPosition() const;
 
 		void SetVoxelType(VoxelType type);
-		void SetColor(const glm::vec4& color);
-		void SetTransform(const Transform& transform);
 		void SetID(u32 id);
-		void Move(const glm::vec3& pos);
-		void Rotate(const glm::vec3& rot);
-		void Scale(const glm::vec3& scale);
 		void SetLocalPosition(const glm::ivec3& local_pos);
 
 		// Static methods for buffer management
@@ -82,11 +73,8 @@ namespace MC {
 		uint8_t visible_faces;
 
 	private:
-		Transform m_transform;
 		VoxelType m_voxel_type;
 		glm::ivec3 m_local_position;
-		glm::vec4 m_color;
-
 		static u32 s_vao;
 		static u32 s_vbo;
 		static u32 s_ebo;

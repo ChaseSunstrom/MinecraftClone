@@ -48,14 +48,14 @@ namespace MC {
         Frustum& camera_frustum = camera.GetFrustum();
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 projection = camera.GetProjectionMatrix();
-        glm::mat4 viewProj = projection * view;
+        glm::mat4 view_proj = projection * view;
 
         m_shader.Use();
         m_shader.SetMat4("view", view);
         m_shader.SetMat4("projection", projection);
 
         // Update frustum
-        camera_frustum.Update(viewProj);
+        camera_frustum.Update(view_proj);
 
         auto& chunks = scene.GetChunks();
 
