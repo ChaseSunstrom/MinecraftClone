@@ -22,7 +22,7 @@ namespace MC {
     class Camera {
     public:
         Camera(f32 aspect_ratio = 16 / 9, glm::vec3 position = { 10.0f, 100.0f, 10.0f }, glm::vec3 up = { 0.0f, 1.0f, 0.0f },
-            f32 yaw = -90.0f, f32 pitch = 0.0f, f32 fov = 45.0f, f32 far = 1000.0f, f32 near = 0.1f, f32 movement_speed = 1, f32 mouse_sensitivity = 0.3);
+            f32 yaw = -90.0f, f32 pitch = 0.0f, f32 fov = 45.0f, f32 far = 3000.0f, f32 near = 0.1f, f32 movement_speed = 1, f32 mouse_sensitivity = 0.3);
 
         // Get view and projection matrices
         glm::mat4 GetViewMatrix() const;

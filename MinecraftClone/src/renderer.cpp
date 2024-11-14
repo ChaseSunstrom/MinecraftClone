@@ -39,7 +39,7 @@ namespace MC {
 
 
         f32 time = glfwGetTime();
-        f32 sun_angle = time * 0.1f;
+        f32 sun_angle = time * 0.05f;
 
         glm::vec3 light_direction = glm::normalize(glm::vec3(
             cos(sun_angle),
@@ -149,9 +149,9 @@ namespace MC {
     }
 
     void Renderer::RenderSun(const Sun& sun, const Camera& camera, const glm::vec3& light_direction) {
-        glm::vec3 sun_position = light_direction * 1000.0f; // Position sun far away
+        glm::vec3 sun_position = light_direction * 2500.0f; // Position sun far away
         glm::mat4 model = glm::translate(glm::mat4(1.0f), sun_position);
-        model = glm::scale(model, glm::vec3(50.0f)); // Scale the sun cube
+        model = glm::scale(model, glm::vec3(150.0f)); // Scale the sun cube
 
         m_unlit_shader.Use();
         m_unlit_shader.SetMat4("model", model);
