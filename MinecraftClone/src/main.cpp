@@ -246,7 +246,6 @@ void DisableLighting(MC::Application& app, MC::EventPtr<MC::KeyPressedEvent> eve
 
 i32 main() {
 	MC::Application app;
-
 	MC::FPSCounter fps_counter;
 
 	// Add features via method chaining

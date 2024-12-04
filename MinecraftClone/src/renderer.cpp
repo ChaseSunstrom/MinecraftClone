@@ -19,8 +19,6 @@ namespace MC {
         return m_enable_lighting;
     }
 
-
-
     void Renderer::Render(ThreadPool& tp, Scene& scene) {
 
         Camera& camera = scene.GetCamera();
@@ -39,11 +37,11 @@ namespace MC {
 
 
         f32 time = glfwGetTime();
-        f32 sun_angle = time * 0.05f;
+        f32 sun_angle = time * 0.01;
 
         glm::vec3 light_direction = glm::normalize(glm::vec3(
             cos(sun_angle),
-            sin(sun_angle),
+            -sin(sun_angle),
             0.0f
         ));
 

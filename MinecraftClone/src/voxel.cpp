@@ -11,7 +11,6 @@ namespace MC {
     u32 Voxel::s_vbo = 0;
     u32 Voxel::s_ebo = 0;
 
-    // Function to map VoxelType to color
     glm::vec4 VoxelTypeToColor(VoxelType type) {
         switch (type) {
         case VoxelType::GRASS_PLAINS:
@@ -23,35 +22,43 @@ namespace MC {
         case VoxelType::GRASS_SAVANNA:
             return { 0.5f, 0.8f, 0.0f, 1.0f }; // Yellowish green
         case VoxelType::GRASS_TAIGA:
-            return { 0.0f, 0.7f, 0.5f, 1.0f }; // Blueish green
+            return { 0.0f, 0.7f, 0.5f, 1.0f }; // Bluish green
+        case VoxelType::GRASS_BIRCH:
+            return { 0.6f, 0.8f, 0.6f, 1.0f }; // Light green
+        case VoxelType::MANGROVE_WOOD:
+            return { 0.55f, 0.27f, 0.07f, 1.0f }; // Brown
+        case VoxelType::RED_SAND:
+            return { 0.8f, 0.4f, 0.2f, 1.0f }; // Red sand
         case VoxelType::DIRT:
             return { 0.55f, 0.27f, 0.07f, 1.0f }; // Brown
         case VoxelType::STONE:
             return { 0.5f, 0.5f, 0.5f, 1.0f }; // Gray
-        case VoxelType::SAND:
-            return { 0.96f, 0.87f, 0.70f, 1.0f }; // Sand color
+        case VoxelType::SNOW:
+            return { 1.0f, 1.0f, 1.0f, 1.0f }; // White
         case VoxelType::WOOD:
             return { 0.65f, 0.50f, 0.39f, 1.0f }; // Wood color
         case VoxelType::LEAVES:
             return { 0.13f, 0.55f, 0.13f, 1.0f }; // Dark green
+        case VoxelType::LEAVES_BIRCH:
+            return { 0.8f, 0.9f, 0.6f, 1.0f }; // Light yellowish green
+        case VoxelType::MANGROVE_LEAVES:
+            return { 0.0f, 0.5f, 0.0f, 1.0f }; // Dark green
+        case VoxelType::DIAMOND_ORE:
+            return { 0.0f, 1.0f, 1.0f, 1.0f }; // Cyan
+        case VoxelType::GOLD_ORE:
+            return { 1.0f, 0.84f, 0.0f, 1.0f }; // Gold color
+        case VoxelType::IRON_ORE:
+            return { 0.8f, 0.5f, 0.2f, 1.0f }; // Rusty color
+        case VoxelType::COAL_ORE:
+            return { 0.2f, 0.2f, 0.2f, 1.0f }; // Dark gray
         case VoxelType::WATER:
             return { 0.0f, 0.0f, 1.0f, 0.7f }; // Blue with transparency
         case VoxelType::ICE:
             return { 0.7f, 0.9f, 1.0f, 0.8f }; // Light blue with transparency
-        case VoxelType::SNOW:
-            return { 1.0f, 1.0f, 1.0f, 1.0f }; // White
-        case VoxelType::LAVA:
-            return { 1.0f, 0.5f, 0.0f, 1.0f }; // Orange
-        case VoxelType::COAL_ORE:
-            return { 0.2f, 0.2f, 0.2f, 1.0f }; // Dark gray
-        case VoxelType::IRON_ORE:
-            return { 0.8f, 0.5f, 0.2f, 1.0f }; // Rusty color
-        case VoxelType::GOLD_ORE:
-            return { 1.0f, 0.84f, 0.0f, 1.0f }; // Gold color
-        case VoxelType::DIAMOND_ORE:
-            return { 0.0f, 1.0f, 1.0f, 1.0f }; // Cyan
         case VoxelType::GRAVEL:
             return { 0.6f, 0.6f, 0.6f, 1.0f }; // Light gray
+        case VoxelType::LAVA:
+            return { 1.0f, 0.5f, 0.0f, 1.0f }; // Orange
         case VoxelType::BEDROCK:
             return { 0.1f, 0.1f, 0.1f, 1.0f }; // Almost black
         case VoxelType::AIR:
@@ -59,7 +66,6 @@ namespace MC {
             return { 0.0f, 0.0f, 0.0f, 0.0f }; // Transparent
         }
     }
-
 
     Voxel::Voxel()
         : m_id(s_next_id++),

@@ -23,6 +23,8 @@ project "MinecraftClone"
 
     includedirs {
         "include",
+        -- For FastNoise/SIMD
+        "include/FAST_NOISE"
     }
 
     libdirs {
@@ -36,11 +38,13 @@ project "MinecraftClone"
     }
 
     filter "configurations:Debug"
-    defines { "DEBUG", "_ITERATOR_DEBUG_LEVEL=2", "GLEW_STATIC" }
-    runtime "Debug"
-    symbols "on"
+        defines { "DEBUG", "_ITERATOR_DEBUG_LEVEL=2", "GLEW_STATIC" }
+        runtime "Debug"
+        symbols "on"
+        links { "lib/FastNoiseD" }
         
-filter "configurations:Release"
-    defines { "NDEBUG", "_ITERATOR_DEBUG_LEVEL=0", "GLEW_STATIC" }
-    runtime "Release"
-    optimize "on"
+    filter "configurations:Release"
+        defines { "NDEBUG", "_ITERATOR_DEBUG_LEVEL=0", "GLEW_STATIC" }
+        runtime "Release"
+        optimize "on"
+        links { "lib/FastNoise" }

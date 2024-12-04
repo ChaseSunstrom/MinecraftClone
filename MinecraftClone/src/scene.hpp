@@ -4,6 +4,7 @@
 #include "chunk.hpp"
 #include "camera.hpp"
 #include "event_handler.hpp"
+#include <FastNoise/FastNoise.h>
 #include <unordered_map>
 #include <memory>
 #include <optional>
@@ -16,7 +17,6 @@
 #include <mutex>
 
 namespace MC {
-
     enum class BiomeType {
         PLAINS,
         DESERT,
@@ -27,7 +27,11 @@ namespace MC {
         SAVANNA,
         TAIGA,
         SNOWY_MOUNTAINS,
-        OCEAN
+        OCEAN,
+        TUNDRA,
+        BIRCH_FOREST,
+        MANGROVE,
+        MESA
     };
 
     class Scene {
@@ -91,6 +95,28 @@ namespace MC {
         ThreadPool& m_thread_pool;
         u32 m_seed;
         Sun m_sun;
+
+        FastNoise::SmartNode<FastNoise::Perlin> m_elevation_generator;
+        FastNoise::SmartNode<FastNoise::FractalFBm> m_elevation_fractal;
+
+        FastNoise::SmartNode<FastNoise::Perlin> m_biome_generator;
+        FastNoise::SmartNode<FastNoise::FractalFBm> m_biome_fractal;
+
+        FastNoise::SmartNode<FastNoise::Perlin> m_cave_generator;
+        FastNoise::SmartNode<FastNoise::FractalFBm> m_cave_fractal;
+
+        FastNoise::SmartNode<FastNoise::Perlin> m_tree_generator;
+        FastNoise::SmartNode<FastNoise::FractalFBm> m_tree_fractal;
+
+        FastNoise::SmartNode<FastNoise::Perlin> m_ore_generator;
+        FastNoise::SmartNode<FastNoise::FractalFBm> m_ore_fractal;
+
+        FastNoise::SmartNode<FastNoise::Perlin> m_temperature_generator;
+        FastNoise::SmartNode<FastNoise::FractalFBm> m_temperature_fractal;
+
+        FastNoise::SmartNode<FastNoise::Perlin> m_humidity_generator;
+        FastNoise::SmartNode<FastNoise::FractalFBm> m_humidity_fractal;
+
     };
 }
 

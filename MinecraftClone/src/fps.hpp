@@ -19,10 +19,10 @@ namespace MC {
 
 		void Update() {
 			frame_count++;
-			auto currentTime = std::chrono::steady_clock::now();
-			std::chrono::duration<f64> delta = currentTime - last_time;
+			auto current_time = std::chrono::steady_clock::now();
+			std::chrono::duration<f64> delta = current_time - last_time;
 			elapsed_time += delta.count();
-			last_time = currentTime;
+			last_time = current_time;
 
 			// Update FPS every second
 			if (elapsed_time >= 1.0) {

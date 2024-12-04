@@ -30,7 +30,7 @@ namespace MC {
 
         // Flag indicating if the chunk needs to update its mesh
         bool NeedsMeshUpdate() const;
-        void SetNeedsMeshUpdate(bool needsUpdate);
+        void SetNeedsMeshUpdate(bool needs_update);
 
         bool HasMeshDataGenerated() const;
         bool IsMeshDataUploaded() const;

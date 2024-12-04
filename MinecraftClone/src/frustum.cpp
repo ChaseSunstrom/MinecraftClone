@@ -58,23 +58,23 @@ namespace MC {
         for (i32 i = 0; i < 6; ++i) {
             const glm::vec4& plane = m_planes[i];
 
-            glm::vec3 positiveVertex = min;
-            glm::vec3 negativeVertex = max;
+            glm::vec3 positive_vertex = min;
+            glm::vec3 negative_vertex = max;
 
             if (plane.x >= 0) {
-                positiveVertex.x = max.x;
-                negativeVertex.x = min.x;
+                positive_vertex.x = max.x;
+                negative_vertex.x = min.x;
             }
             if (plane.y >= 0) {
-                positiveVertex.y = max.y;
-                negativeVertex.y = min.y;
+                positive_vertex.y = max.y;
+                negative_vertex.y = min.y;
             }
             if (plane.z >= 0) {
-                positiveVertex.z = max.z;
-                negativeVertex.z = min.z;
+                positive_vertex.z = max.z;
+                negative_vertex.z = min.z;
             }
 
-            if (glm::dot(glm::vec3(plane), positiveVertex) + plane.w < 0) {
+            if (glm::dot(glm::vec3(plane), positive_vertex) + plane.w < 0) {
                 return false; // Outside the frustum
             }
         }

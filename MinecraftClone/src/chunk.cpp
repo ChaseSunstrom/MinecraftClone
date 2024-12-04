@@ -53,8 +53,8 @@ namespace MC {
         return m_mesh_data_uploaded;
     }
 
-    void Chunk::SetNeedsMeshUpdate(bool needsUpdate) {
-        m_needs_mesh_update = needsUpdate;
+    void Chunk::SetNeedsMeshUpdate(bool needs_update) {
+        m_needs_mesh_update = needs_update;
     }
 
     void Chunk::GenerateMeshData(const Scene& scene) {
@@ -95,7 +95,6 @@ namespace MC {
                         continue;
                     }
 
-                    // Calculate the world position of the voxel
                     glm::vec3 world_pos = glm::vec3(x, y, z);
 
                     // For each face

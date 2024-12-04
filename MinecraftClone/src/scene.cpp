@@ -1,15 +1,16 @@
 #include "scene.hpp"
 #include "ray.hpp"
+#include <FastNoise/FastNoise.h>
 #include <glm/gtc/noise.hpp>
 #include <cmath>
 #include <random>
 #include <chrono>
+#include <algorithm>
 
 namespace MC {
-
     // Constants for world generation
     const i32 CHUNK_LOAD_RADIUS = 32;
-    const i32 CHUNK_LOAD_HEIGHT = 8;
+    const i32 CHUNK_LOAD_HEIGHT = 4;
     const f32 BIOME_SCALE = 0.003f; // Larger scale for smaller biomes
     const f32 ELEVATION_SCALE = 0.05f; // Smaller scale for smoother terrain
     const f32 CAVE_SCALE = 0.05f;
@@ -17,9 +18,9 @@ namespace MC {
     const f32 ORE_SCALE = 0.1f;
     const f32 CAVE_THRESHOLD = 0.6f;
     const f32 TREE_THRESHOLD = 0.8f;
-    const i32 SEA_LEVEL = 65;
+    const i32 SEA_LEVEL = 60;
     // Limit the number of chunks to generate per frame
-    const size_t MAX_CHUNKS_PER_FRAME = 5;
+    const size_t MAX_CHUNKS_PER_FRAME = 2;
 
     f32 Hash(i32 x, i32 y, i32 z, uint32_t seed) {
         uint32_t h = seed;
@@ -48,7 +49,7 @@ namespace MC {
         : m_event_handler(event_handler), m_thread_pool(tp),
         m_camera(std::make_unique<Camera>()),
         m_sky_color(glm::vec4(0.2f, 0.3f, 0.4f, 1.0f)),
-        m_last_player_chunk_pos(glm::ivec3(std::numeric_limits<i32>::max())) // Initialize to an invalid position
+        m_last_player_chunk_pos(glm::ivec3(std::numeric_limits<i32>::max()))
     {
         Camera& camera = *m_camera;
         m_event_handler.SubscribeToEvent<WindowResizedEvent>([&camera](EventPtr<WindowResizedEvent> event) {
@@ -58,6 +59,62 @@ namespace MC {
         std::random_device rd;
         std::mt19937 mt(rd());
         m_seed = mt();
+
+        // Initialize Elevation Noise
+        m_elevation_generator = FastNoise::New<FastNoise::Perlin>();
+        m_elevation_fractal = FastNoise::New<FastNoise::FractalFBm>();
+        m_elevation_fractal->SetSource(m_elevation_generator);
+        m_elevation_fractal->SetOctaveCount(6); // Increased octaves
+        //m_elevation_fractal->SetGain(0.4f); // Persistence
+        //m_elevation_fractal->SetLacunarity(2.2f); // Lacunarity
+
+        // Initialize Biome Noise
+        m_biome_generator = FastNoise::New<FastNoise::Perlin>();
+        m_biome_fractal = FastNoise::New<FastNoise::FractalFBm>();
+        m_biome_fractal->SetSource(m_biome_generator);
+        m_biome_fractal->SetOctaveCount(4);
+        //m_biome_fractal->SetGain(0.5f);
+        //m_biome_fractal->SetLacunarity(2.0f);
+
+        // Initialize Cave Noise
+        m_cave_generator = FastNoise::New<FastNoise::Perlin>();
+        m_cave_fractal = FastNoise::New<FastNoise::FractalFBm>();
+        m_cave_fractal->SetSource(m_cave_generator);
+        m_cave_fractal->SetOctaveCount(3);
+        //m_cave_fractal->SetGain(0.6f);
+        //m_cave_fractal->SetLacunarity(2.0f);
+
+        // Initialize Tree Noise
+        m_tree_generator = FastNoise::New<FastNoise::Perlin>();
+        m_tree_fractal = FastNoise::New<FastNoise::FractalFBm>();
+        m_tree_fractal->SetSource(m_tree_generator);
+        m_tree_fractal->SetOctaveCount(2);
+        //m_tree_fractal->SetGain(0.5f);
+        //m_tree_fractal->SetLacunarity(2.0f);
+
+        // Initialize Ore Noise
+        m_ore_generator = FastNoise::New<FastNoise::Perlin>();
+        m_ore_fractal = FastNoise::New<FastNoise::FractalFBm>();
+        m_ore_fractal->SetSource(m_ore_generator);
+        m_ore_fractal->SetOctaveCount(3);
+        //m_ore_fractal->SetGain(0.7f);
+        //m_ore_fractal->SetLacunarity(2.0f);
+
+        // Initialize Temperature Noise
+        m_temperature_generator = FastNoise::New<FastNoise::Perlin>();
+        m_temperature_fractal = FastNoise::New<FastNoise::FractalFBm>();
+        m_temperature_fractal->SetSource(m_temperature_generator);
+        m_temperature_fractal->SetOctaveCount(4);
+        //m_temperature_fractal->SetGain(0.5f);
+        //m_temperature_fractal->SetLacunarity(2.0f);
+
+        // Initialize Humidity Noise
+        m_humidity_generator = FastNoise::New<FastNoise::Perlin>();
+        m_humidity_fractal = FastNoise::New<FastNoise::FractalFBm>();
+        m_humidity_fractal->SetSource(m_humidity_generator);
+        m_humidity_fractal->SetOctaveCount(4);
+        //m_humidity_fractal->SetGain(0.5f);
+        //m_humidity_fractal->SetLacunarity(2.0f);
     }
 
     Scene::~Scene() {
@@ -74,7 +131,6 @@ namespace MC {
         std::lock_guard<std::mutex> lock(m_chunk_mutex);
         glm::vec3 player_pos = m_camera->GetPosition();
         glm::ivec3 player_chunk_pos = glm::floor(player_pos / static_cast<f32>(Chunk::CHUNK_SIZE));
-
 
         m_last_player_chunk_pos = player_chunk_pos;
 
@@ -128,33 +184,50 @@ namespace MC {
     }
 
     void Scene::GenerateChunk(const glm::ivec3& chunk_pos) {
-        m_chunks.emplace(
-            chunk_pos,
-            std::make_shared<Chunk>(chunk_pos)
-        );
+        auto new_chunk = std::make_shared<Chunk>(chunk_pos);
+        m_chunks.emplace(chunk_pos, new_chunk);
 
-        auto chunk_it = m_chunks.find(chunk_pos);
-        auto chunk = chunk_it->second;
-
-        GenerateVoxelDataForChunk(*chunk);
-        chunk->SetNeedsMeshUpdate(true);
+        GenerateVoxelDataForChunk(*new_chunk);
+        new_chunk->SetNeedsMeshUpdate(true);
     }
 
     BiomeType Scene::GetBiomeType(i32 world_x, i32 world_z) {
-        f32 hash = Hash(world_x, world_z, m_seed);
-        f32 biome_noise = glm::perlin(glm::vec2(world_x * BIOME_SCALE, world_z * BIOME_SCALE) + glm::vec2(hash));
-        biome_noise = (biome_noise + 1.0f) / 2.0f;
+        // Generate temperature and humidity values
+        f32 temperature = m_temperature_fractal->GenSingle2D(world_x * BIOME_SCALE, world_z * BIOME_SCALE, m_seed + 6);
+        temperature = (temperature + 1.0f) / 2.0f; // Normalize to [0,1]
 
-        if (biome_noise < 0.1f) return BiomeType::OCEAN;
-        if (biome_noise < 0.2f) return BiomeType::DESERT;
-        if (biome_noise < 0.3f) return BiomeType::PLAINS;
-        if (biome_noise < 0.4f) return BiomeType::FOREST;
-        if (biome_noise < 0.5f) return BiomeType::SWAMP;
-        if (biome_noise < 0.6f) return BiomeType::JUNGLE;
-        if (biome_noise < 0.7f) return BiomeType::SAVANNA;
-        if (biome_noise < 0.8f) return BiomeType::TAIGA;
-        if (biome_noise < 0.9f) return BiomeType::MOUNTAINS;
-        return BiomeType::SNOWY_MOUNTAINS;
+        f32 humidity = m_humidity_fractal->GenSingle2D(world_x * BIOME_SCALE, world_z * BIOME_SCALE, m_seed + 7);
+        humidity = (humidity + 1.0f) / 2.0f; // Normalize to [0,1]
+
+        // Determine biome based on temperature and humidity
+        if (temperature < 0.2f) {
+            if (humidity < 0.3f) return BiomeType::DESERT;
+            else if (humidity < 0.6f) return BiomeType::SAVANNA;
+            else return BiomeType::MESA;
+        }
+        else if (temperature < 0.4f) {
+            if (humidity < 0.3f) return BiomeType::SAVANNA;
+            else if (humidity < 0.6f) return BiomeType::FOREST;
+            else return BiomeType::MANGROVE;
+        }
+        else if (temperature < 0.6f) {
+            if (humidity < 0.3f) return BiomeType::TAIGA;
+            else if (humidity < 0.6f) return BiomeType::BIRCH_FOREST;
+            else return BiomeType::SWAMP;
+        }
+        else if (temperature < 0.8f) {
+            if (humidity < 0.3f) return BiomeType::FOREST;
+            else if (humidity < 0.6f) return BiomeType::JUNGLE;
+            else return BiomeType::SWAMP;
+        }
+        else {
+            if (humidity < 0.3f) return BiomeType::SNOWY_MOUNTAINS;
+            else if (humidity < 0.6f) return BiomeType::TUNDRA;
+            else return BiomeType::SNOWY_MOUNTAINS;
+        }
+
+        // Fallback to PLAINS
+        return BiomeType::PLAINS;
     }
 
     i32 Scene::GetBiomeElevation(f32 elevation, BiomeType biome) {
@@ -179,22 +252,32 @@ namespace MC {
             return static_cast<i32>(elevation * 50 + 90);
         case BiomeType::OCEAN:
             return SEA_LEVEL - static_cast<i32>(elevation * 10); // Deeper oceans
+        case BiomeType::TUNDRA:
+            return static_cast<i32>(elevation * 8 + 55);
+        case BiomeType::BIRCH_FOREST:
+            return static_cast<i32>(elevation * 15 + 55);
+        case BiomeType::MANGROVE:
+            return static_cast<i32>(elevation * 12 + 50);
+        case BiomeType::MESA:
+            return static_cast<i32>(elevation * 6 + 48);
         default:
             return static_cast<i32>(elevation * 20 + 60);
         }
     }
 
     f32 Scene::ComputeElevationNoise(f32 x, f32 z) {
-        const i32 OCTAVES = 7;
-        const f32 PERSISTENCE = 0.5f;
-        const f32 LACUNARITY = 2.0f;
+        // Minecraft-like elevation noise parameters
+        const i32 OCTAVES = 6; // Increased for more detail
+        const f32 PERSISTENCE = 0.4f; // Lower persistence for smoother terrain
+        const f32 LACUNARITY = 2.2f; // Higher lacunarity for more frequency variation
         f32 frequency = ELEVATION_SCALE;
         f32 amplitude = 1.0f;
         f32 max_amplitude = 0.0f;
         f32 noise_value = 0.0f;
 
         for (i32 i = 0; i < OCTAVES; ++i) {
-            f32 noise = glm::perlin(glm::vec2(x * frequency, z * frequency)) * amplitude;
+            // Generate noise using FastNoise
+            f32 noise = m_elevation_fractal->GenSingle2D(x * frequency, z * frequency, m_seed + 1) * amplitude;
             noise_value += noise;
             max_amplitude += amplitude;
 
@@ -208,6 +291,30 @@ namespace MC {
 
     i32 Scene::GetTerrainHeight(i32 world_x, i32 world_z, BiomeType biome) {
         f32 elevation = ComputeElevationNoise(static_cast<f32>(world_x), static_cast<f32>(world_z));
+
+        // Adjust elevation based on biome
+        switch (biome) {
+        case BiomeType::MOUNTAINS:
+        case BiomeType::SNOWY_MOUNTAINS:
+            elevation *= 1.5f; // Higher elevations
+            break;
+        case BiomeType::DESERT:
+            elevation *= 0.8f; // Smoother, lower elevations
+            break;
+        case BiomeType::JUNGLE:
+        case BiomeType::FOREST:
+            elevation *= 1.0f; // Standard
+            break;
+        case BiomeType::TUNDRA:
+            elevation *= 1.2f;
+            break;
+        case BiomeType::MESA:
+            elevation *= 0.9f;
+            break;
+            // Add more cases as needed
+        default:
+            elevation *= 1.0f;
+        }
 
         // Get neighboring biome types and elevations
         struct Neighbor {
@@ -239,12 +346,12 @@ namespace MC {
     }
 
     bool Scene::IsCave(i32 world_x, i32 world_y, i32 world_z) {
-        i32 hash = Hash(world_x, world_y, world_z, m_seed);
-        f32 cave_noise = glm::perlin(glm::vec3(world_x * CAVE_SCALE, world_y * CAVE_SCALE, world_z * CAVE_SCALE) + glm::vec3(hash));
+        f32 cave_noise = m_cave_fractal->GenSingle3D(world_x * CAVE_SCALE, world_y * CAVE_SCALE, world_z * CAVE_SCALE, m_seed + 3);
         return cave_noise > CAVE_THRESHOLD;
     }
 
     VoxelType Scene::GetVoxelType(i32 world_x, i32 world_y, i32 world_z, i32 terrain_height, BiomeType biome) {
+        // Above terrain height
         if (world_y > terrain_height) {
             if (biome == BiomeType::OCEAN && world_y <= SEA_LEVEL) {
                 return VoxelType::WATER;
@@ -255,6 +362,14 @@ namespace MC {
             // Snow on top of snowy mountains
             if (biome == BiomeType::SNOWY_MOUNTAINS && world_y <= terrain_height + 1) {
                 return VoxelType::SNOW;
+            }
+            // Ice near water bodies in cold biomes
+            if ((biome == BiomeType::SNOWY_MOUNTAINS || biome == BiomeType::TAIGA || biome == BiomeType::TUNDRA) && world_y <= terrain_height + 2) {
+                // Check if the voxel below is water
+                VoxelType below_voxel = GetVoxelAtPosition({ world_x, world_y - 1, world_z });
+                if (below_voxel == VoxelType::WATER) {
+                    return VoxelType::ICE;
+                }
             }
             return VoxelType::AIR;
         }
@@ -269,21 +384,39 @@ namespace MC {
             return VoxelType::BEDROCK;
         }
 
-        // Ore generation
+        // Handle lava pools
+        if (world_y < 10) { // Arbitrary threshold for lava depth
+            f32 lava_noise = m_ore_fractal->GenSingle3D(world_x * ORE_SCALE, world_y * ORE_SCALE, world_z * ORE_SCALE, m_seed + 8);
+            lava_noise = (lava_noise + 1.0f) / 2.0f; // Normalize to [0,1]
+            if (lava_noise > 0.98f) { // Adjust threshold as needed
+                return VoxelType::LAVA;
+            }
+        }
+
+        // Generate ores
         if (world_y < 60 && world_y > 5) {
-            f32 ore_noise = glm::perlin(glm::vec3(world_x * ORE_SCALE, world_y * ORE_SCALE, world_z * ORE_SCALE));
+            f32 ore_noise = m_ore_fractal->GenSingle3D(world_x * ORE_SCALE, world_y * ORE_SCALE, world_z * ORE_SCALE, m_seed + 4);
             ore_noise = (ore_noise + 1.0f) / 2.0f;
-            if (ore_noise > 0.8f) {
-                return VoxelType::COAL_ORE;
+            if (ore_noise > 0.96f) {
+                return VoxelType::DIAMOND_ORE;
             }
-            else if (ore_noise > 0.85f) {
-                return VoxelType::IRON_ORE;
-            }
-            else if (ore_noise > 0.9f) {
+            else if (ore_noise > 0.92f) {
                 return VoxelType::GOLD_ORE;
             }
-            else if (ore_noise > 0.95f) {
-                return VoxelType::DIAMOND_ORE;
+            else if (ore_noise > 0.88f) {
+                return VoxelType::IRON_ORE;
+            }
+            else if (ore_noise > 0.84f) {
+                return VoxelType::COAL_ORE;
+            }
+        }
+
+        // Generate gravel in specific biomes or conditions
+        if (biome == BiomeType::DESERT || biome == BiomeType::SAVANNA || biome == BiomeType::MESA) {
+            f32 gravel_noise = m_biome_fractal->GenSingle2D(world_x * BIOME_SCALE, world_z * BIOME_SCALE, m_seed + 9);
+            gravel_noise = (gravel_noise + 1.0f) / 2.0f;
+            if (gravel_noise > 0.95f && world_y <= GetBiomeElevation(ComputeElevationNoise(static_cast<f32>(world_x), static_cast<f32>(world_z)), biome)) {
+                return VoxelType::GRAVEL;
             }
         }
 
@@ -310,7 +443,15 @@ namespace MC {
             case BiomeType::MOUNTAINS:
                 return VoxelType::STONE;
             case BiomeType::SNOWY_MOUNTAINS:
-                return VoxelType::STONE;
+                return VoxelType::SNOW;
+            case BiomeType::TUNDRA:
+                return VoxelType::SNOW;
+            case BiomeType::BIRCH_FOREST:
+                return VoxelType::GRASS_BIRCH;
+            case BiomeType::MANGROVE:
+                return VoxelType::MANGROVE_WOOD;
+            case BiomeType::MESA:
+                return VoxelType::RED_SAND;
             default:
                 return VoxelType::GRASS_PLAINS;
             }
@@ -329,51 +470,76 @@ namespace MC {
     }
 
     void Scene::GenerateTrees(Chunk& chunk, i32 world_x, i32 world_z, i32 terrain_height, BiomeType biome) {
-        f32 hash = Hash(world_x, world_z, m_seed);
-        f32 tree_noise = glm::perlin(glm::vec2(world_x * TREE_SCALE, world_z * TREE_SCALE) + glm::vec2(hash));
+        f32 tree_noise = m_tree_fractal->GenSingle2D(world_x * TREE_SCALE, world_z * TREE_SCALE, m_seed + 5);
+        tree_noise = (tree_noise + 1.0f) / 2.0f;
 
         if (tree_noise > TREE_THRESHOLD) {
             // Place a tree at this location
             i32 trunk_height = 5;
 
             // Adjust trunk height for different biomes
-            if (biome == BiomeType::JUNGLE) {
+            switch (biome) {
+            case BiomeType::JUNGLE:
                 trunk_height = 10;
-            }
-            else if (biome == BiomeType::TAIGA) {
+                break;
+            case BiomeType::TAIGA:
                 trunk_height = 7;
+                break;
+            case BiomeType::BIRCH_FOREST:
+                trunk_height = 6;
+                break;
+            case BiomeType::MANGROVE:
+                trunk_height = 8;
+                break;
+                // Add more cases as needed
+            default:
+                trunk_height = 5;
+                break;
             }
 
-            // Generate the trunk
-            for (i32 y = 1; y <= trunk_height; ++y) {
-                i32 world_y = terrain_height + y;
+            // Ensure trees don't exceed chunk boundaries
+            i32 world_y = terrain_height + 1;
+            for (i32 y = 0; y < trunk_height; ++y) {
+                if (world_y + y >= CHUNK_LOAD_HEIGHT * Chunk::CHUNK_SIZE) break;
                 glm::ivec3 local_pos = glm::ivec3(
-                    world_x % Chunk::CHUNK_SIZE,
-                    world_y % Chunk::CHUNK_SIZE,
-                    world_z % Chunk::CHUNK_SIZE
+                    (world_x % Chunk::CHUNK_SIZE + Chunk::CHUNK_SIZE) % Chunk::CHUNK_SIZE,
+                    (world_y + y) % Chunk::CHUNK_SIZE,
+                    (world_z % Chunk::CHUNK_SIZE + Chunk::CHUNK_SIZE) % Chunk::CHUNK_SIZE
                 );
                 chunk.SetVoxel(local_pos, VoxelType::WOOD);
             }
 
-            // Add leaves
+            // Add leaves with better distribution
             i32 leaf_start = terrain_height + trunk_height - 2;
             for (i32 y = leaf_start; y <= terrain_height + trunk_height + 1; ++y) {
                 for (i32 dx = -2; dx <= 2; ++dx) {
                     for (i32 dz = -2; dz <= 2; ++dz) {
                         if (dx * dx + dz * dz <= 4) {
-                            i32 world_y = y;
                             i32 world_leaf_x = world_x + dx;
                             i32 world_leaf_z = world_z + dz;
                             glm::ivec3 local_pos = glm::ivec3(
-                                world_leaf_x % Chunk::CHUNK_SIZE,
-                                world_y % Chunk::CHUNK_SIZE,
-                                world_leaf_z % Chunk::CHUNK_SIZE
+                                (world_leaf_x % Chunk::CHUNK_SIZE + Chunk::CHUNK_SIZE) % Chunk::CHUNK_SIZE,
+                                y % Chunk::CHUNK_SIZE,
+                                (world_leaf_z % Chunk::CHUNK_SIZE + Chunk::CHUNK_SIZE) % Chunk::CHUNK_SIZE
                             );
                             VoxelType leaf_type = VoxelType::LEAVES;
 
-                            // For snowy biomes, use snow instead of leaves
-                            if (biome == BiomeType::SNOWY_MOUNTAINS || biome == BiomeType::TAIGA) {
+                            // Adjust leaf type based on biome
+                            switch (biome) {
+                            case BiomeType::SNOWY_MOUNTAINS:
+                            case BiomeType::TAIGA:
                                 leaf_type = VoxelType::SNOW;
+                                break;
+                            case BiomeType::BIRCH_FOREST:
+                                leaf_type = VoxelType::LEAVES_BIRCH;
+                                break;
+                            case BiomeType::MANGROVE:
+                                leaf_type = VoxelType::MANGROVE_LEAVES;
+                                break;
+                                // Add more cases as needed
+                            default:
+                                leaf_type = VoxelType::LEAVES;
+                                break;
                             }
 
                             chunk.SetVoxel(local_pos, leaf_type);
@@ -467,7 +633,7 @@ namespace MC {
         std::lock_guard<std::mutex> lock(m_chunk_mutex);
         auto voxelLocIt = m_voxelLocations.find(voxel_id);
         if (voxelLocIt == m_voxelLocations.end()) {
-            std::cerr << "Attempted to remove non-existent voxel with ID: " << voxel_id << "\n";
+            LOG_ERROR("Attempted to remove non-existent voxel with ID: " << voxel_id);
             return;
         }
 
@@ -501,7 +667,6 @@ namespace MC {
     }
 
     VoxelType Scene::GetVoxelAtPosition(const glm::ivec3& world_pos) const {
-        std::lock_guard<std::mutex> lock(m_chunk_mutex);
         glm::ivec3 chunk_pos, local_pos;
         WorldToChunkLocal(world_pos, chunk_pos, local_pos);
 
@@ -510,9 +675,9 @@ namespace MC {
             const Chunk& chunk = *chunk_it->second;
             return chunk.GetVoxel(local_pos);
         }
+
         return VoxelType::AIR;
     }
-
 
     std::unordered_map<glm::ivec3, std::shared_ptr<Chunk>>& Scene::GetChunks() {
         return m_chunks;
@@ -531,7 +696,9 @@ namespace MC {
     }
 
     std::optional<VoxelHitInfo> Scene::GetVoxelLookedAt(f32 max_distance) const {
+        // Implement raycasting to detect voxel hits
+        // Placeholder implementation
         return std::nullopt;
     }
 
-}
+} // namespace MC
